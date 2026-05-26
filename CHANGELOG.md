@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
-## [1.0.0] - 2026-05-26
+## [1.0.2] - 2026-05-26
 
 ### Added
 
@@ -33,4 +33,4 @@ The format follows the spirit of Keep a Changelog, and this project uses semanti
 
 ### Notes
 
-- Version 1.0.0 has no database migrations.
+- Version 1.0.2 has no database migrations.

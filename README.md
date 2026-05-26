@@ -28,7 +28,7 @@ The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redm
 | Rails | Follows the installed Redmine version |
 | Database | MariaDB/MySQL, PostgreSQL, SQLite where supported by Redmine |
 
-The plugin has no database migrations in version 1.0.0.
+The plugin has no database migrations in version 1.0.2.
 
 ## Installation
 
@@ -69,7 +69,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 touch tmp/restart.txt
 ```
 
-Version 1.0.0 does not require database migration, but running the standard Redmine plugin migration command is safe.
+Version 1.0.2 does not require database migration, but running the standard Redmine plugin migration command is safe.
 
 ## Default Behavior
 
@@ -155,7 +155,7 @@ The details page shows issue rows only for issues visible to the current user. T
 
 ## Performance
 
-Version 1.0.0 uses live calculation.
+Version 1.0.2 uses live calculation.
 
 To reduce request overhead:
 

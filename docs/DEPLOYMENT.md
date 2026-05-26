@@ -36,7 +36,7 @@ rm -rf plugins/redmine_project_percent_done
 touch tmp/restart.txt
 ```
 
-Version 1.0.0 does not create database tables or run migrations, so rollback does not require database changes.
+Version 1.0.2 does not create database tables or run migrations, so rollback does not require database changes.
 
 ## Shared Hosting Notes
 

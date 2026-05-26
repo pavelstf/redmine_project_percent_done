@@ -4,7 +4,7 @@ Redmine::Plugin.register :redmine_project_percent_done do
   name 'Redmine Project Percent Done'
   author 'PAvcho'
   description 'Calculates project completion percentage from issue % done and relative issue weight.'
-  version '1.0.0'
+  version '1.0.2'
   requires_redmine :version_or_higher => '5.0.0'
 
   settings(
