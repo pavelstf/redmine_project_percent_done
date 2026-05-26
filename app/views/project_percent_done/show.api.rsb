@@ -1,0 +1,15 @@
+api.project_percent_done do
+  api.project_id @project.id
+  api.project_identifier @project.identifier
+  api.percent_done @result.percent_done
+  api.raw_percent_done @result.raw_percent_done
+  api.issue_count @result.issue_count
+  api.not_included_issue_count @result.not_included_issue_count
+  api.estimated_issue_count @result.estimated_issue_count
+  api.unestimated_issue_count @result.unestimated_issue_count
+  api.total_weight @result.total_weight
+  api.closed_issue_mode ProjectPercentDone::Settings.closed_issue_mode
+  api.unestimated_issue_mode ProjectPercentDone::Settings.unestimated_issue_mode
+  api.calculation_mode 'live'
+  api.warnings @result.warnings
+end

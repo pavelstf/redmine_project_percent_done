@@ -1,0 +1,26 @@
+# Local workspace files
+master-prompt.md
+*.zip
+*.tar.gz
+*.tgz
+
+# Redmine/local test checkouts
+redmine-*/
+
+# Ruby/Bundler
+.bundle/
+vendor/bundle/
+Gemfile.lock.local
+
+# Logs and temp files
+log/
+tmp/
+coverage/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/

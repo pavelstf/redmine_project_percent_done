@@ -1,0 +1,92 @@
+<fieldset class="box">
+  <legend><%= l(:label_project_percent_done_display_locations) %></legend>
+
+  <p>
+    <%= hidden_field_tag 'settings[display_overview]', '0' %>
+    <label>
+      <%= check_box_tag 'settings[display_overview]', '1', @settings['display_overview'].to_s == '1' %>
+      <%= l(:label_project_percent_done_display_overview) %>
+    </label>
+  </p>
+
+  <p>
+    <%= hidden_field_tag 'settings[display_sidebar]', '0' %>
+    <label>
+      <%= check_box_tag 'settings[display_sidebar]', '1', @settings['display_sidebar'].to_s == '1' %>
+      <%= l(:label_project_percent_done_display_sidebar) %>
+    </label>
+  </p>
+
+  <p>
+    <%= hidden_field_tag 'settings[display_project_tab]', '0' %>
+    <label>
+      <%= check_box_tag 'settings[display_project_tab]', '1', @settings['display_project_tab'].to_s == '1' %>
+      <%= l(:label_project_percent_done_display_project_tab) %>
+    </label>
+  </p>
+
+  <p>
+    <%= hidden_field_tag 'settings[enable_rest_api]', '0' %>
+    <label>
+      <%= check_box_tag 'settings[enable_rest_api]', '1', @settings['enable_rest_api'].to_s == '1' %>
+      <%= l(:label_project_percent_done_enable_rest_api) %>
+    </label>
+  </p>
+
+</fieldset>
+
+<fieldset class="box">
+  <legend><%= l(:label_project_percent_done_calculation_settings) %></legend>
+
+  <p>
+    <label><%= l(:label_project_percent_done_issue_scope) %></label>
+    <%= select_tag 'settings[issue_scope]',
+      options_for_select(
+        [
+          [l(:label_project_percent_done_leaf_issues_only), 'leaf_issues_only']
+        ],
+        @settings['issue_scope']
+      ) %>
+  </p>
+
+  <p>
+    <label><%= l(:label_project_percent_done_closed_issue_mode) %></label>
+    <%= select_tag 'settings[closed_issue_mode]',
+      options_for_select(
+        [
+          [l(:label_project_percent_done_treat_closed_as_100), 'treat_as_100'],
+          [l(:label_project_percent_done_use_done_ratio), 'use_done_ratio']
+        ],
+        @settings['closed_issue_mode']
+      ) %>
+  </p>
+
+  <p>
+    <label><%= l(:label_project_percent_done_unestimated_issue_mode) %></label>
+    <%= select_tag 'settings[unestimated_issue_mode]',
+      options_for_select(
+        [
+          [l(:label_project_percent_done_use_average_estimate), 'use_average_estimate'],
+          [l(:label_project_percent_done_use_weight_1), 'use_weight_1'],
+          [l(:label_project_percent_done_ignore_unestimated), 'ignore'],
+          [l(:label_project_percent_done_equal_weight_all), 'equal_weight_all']
+        ],
+        @settings['unestimated_issue_mode']
+      ) %>
+  </p>
+
+  <p>
+    <label><%= l(:label_project_percent_done_rounding_mode) %></label>
+    <%= select_tag 'settings[rounding_mode]',
+      options_for_select(
+        [
+          [l(:label_project_percent_done_nearest_integer), 'nearest_integer'],
+          [l(:label_project_percent_done_floor), 'floor'],
+          [l(:label_project_percent_done_ceil), 'ceil']
+        ],
+        @settings['rounding_mode']
+      ) %>
+  </p>
+</fieldset>
+
+<p class="info"><%= l(:text_project_percent_done_absolute_progress_notice) %></p>

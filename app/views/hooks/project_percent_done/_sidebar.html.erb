@@ -1,0 +1,41 @@
+<% percent_done_label = "#{result.percent_done}%" %>
+<% issue_filter_url = lambda do |issue_ids|
+     visible_issue_ids = issue_ids.present? ? Issue.visible.where(:id => issue_ids).pluck(:id) : []
+     if visible_issue_ids.any?
+       url_for(
+         :controller => 'issues',
+         :action => 'index',
+         :project_id => project.identifier,
+         :set_filter => 1,
+         :f => ['issue_id'],
+         :op => { 'issue_id' => '=' },
+         :v => { 'issue_id' => [visible_issue_ids.join(',')] }
+       )
+     end
+   end %>
+<% details_url = url_for(:controller => 'project_percent_done', :action => 'show', :project_id => project.identifier) %>
+<% included_url = issue_filter_url.call(result.included_issue_ids) %>
+<% not_included_url = issue_filter_url.call(result.not_included_issue_ids) %>
+
+<h3><%= l(:label_project_percent_done) %></h3>
+<p>
+  <strong><%= percent_done_label %></strong>
+</p>
+<%= progress_bar(result.percent_done, :legend => percent_done_label) %>
+<p class="small">
+  <%= l(:label_project_percent_done_issue_count) %>:
+  <% if included_url %>
+    <%= link_to result.issue_count, included_url %>
+  <% else %>
+    <%= result.issue_count %>
+  <% end %>
+  <br />
+  <%= l(:label_project_percent_done_not_included_issue_count) %>:
+  <% if not_included_url %>
+    <%= link_to result.not_included_issue_count, not_included_url %>
+  <% else %>
+    <%= result.not_included_issue_count %>
+  <% end %>
+  <br />
+  <%= link_to l(:label_project_percent_done_details), details_url %>
+</p>

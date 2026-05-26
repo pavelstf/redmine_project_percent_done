@@ -1,0 +1,170 @@
+<h2><%= l(:label_project_percent_done_details) %></h2>
+
+<% included_url = project_percent_done_issues_filter_url(@project, @result.included_issue_ids) %>
+<% not_included_url = project_percent_done_issues_filter_url(@project, @result.not_included_issue_ids) %>
+<% visible_included_rows = project_percent_done_visible_rows(@result.included_rows) %>
+<% visible_not_included_rows = project_percent_done_visible_rows(@result.not_included_rows) %>
+<% hidden_included_count = project_percent_done_hidden_row_count(@result.included_rows) %>
+<% hidden_not_included_count = project_percent_done_hidden_row_count(@result.not_included_rows) %>
+<% total_weighted_value = @result.included_rows.sum(&:weighted_value) %>
+
+<div class="box project-percent-done">
+  <h3><%= l(:label_project_percent_done_summary) %></h3>
+
+  <p>
+    <strong><%= l(:label_project_percent_done) %>:</strong>
+    <%= project_percent_done_label(@result) %>
+  </p>
+
+  <%= progress_bar(@result.percent_done, :legend => project_percent_done_label(@result)) %>
+
+  <table class="list">
+    <tbody>
+      <tr>
+        <th><%= l(:label_project_percent_done_issue_count) %></th>
+        <td>
+          <% if included_url %>
+            <%= link_to @result.issue_count, included_url %>
+          <% else %>
+            <%= @result.issue_count %>
+          <% end %>
+        </td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_not_included_issue_count) %></th>
+        <td>
+          <% if not_included_url %>
+            <%= link_to @result.not_included_issue_count, not_included_url %>
+          <% else %>
+            <%= @result.not_included_issue_count %>
+          <% end %>
+        </td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_estimated_issue_count) %></th>
+        <td><%= @result.estimated_issue_count %></td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_unestimated_issue_count) %></th>
+        <td><%= @result.unestimated_issue_count %></td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_total_weight) %></th>
+        <td><%= number_with_precision(@result.total_weight, :precision => 2) %></td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_issue_scope) %></th>
+        <td><%= l(:label_project_percent_done_leaf_issues_only) %></td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_closed_issue_mode) %></th>
+        <td><%= l(:"label_project_percent_done_#{ProjectPercentDone::Settings.closed_issue_mode}") %></td>
+      </tr>
+      <tr>
+        <th><%= l(:label_project_percent_done_unestimated_issue_mode) %></th>
+        <td><%= l(:"label_project_percent_done_#{ProjectPercentDone::Settings.unestimated_issue_mode}") %></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box project-percent-done">
+  <h3><%= l(:label_project_percent_done_formula) %></h3>
+  <p><code><%= l(:text_project_percent_done_formula) %></code></p>
+  <ul>
+    <li><%= l(:text_project_percent_done_note_leaf_issues) %></li>
+    <li><%= l(:text_project_percent_done_note_subprojects) %></li>
+    <li><%= l(:text_project_percent_done_absolute_progress_notice) %></li>
+  </ul>
+</div>
+
+<p class="warning project-percent-done-warning" style="color: #b00020; font-weight: bold;">
+  <%= l(:text_project_percent_done_visibility_warning) %>
+</p>
+
+<h3><%= l(:label_project_percent_done_included_issues) %></h3>
+<% if hidden_included_count.positive? %>
+  <p class="warning"><%= l(:text_project_percent_done_hidden_included_issues, :count => hidden_included_count) %></p>
+<% end %>
+
+<table class="list issues">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th><%= l(:field_subject) %></th>
+      <th><%= l(:field_status) %></th>
+      <th><%= l(:field_done_ratio) %></th>
+      <th><%= l(:label_project_percent_done_effective_done_ratio) %></th>
+      <th><%= l(:field_estimated_hours) %></th>
+      <th><%= l(:label_project_percent_done_applied_weight) %></th>
+      <th><%= l(:label_project_percent_done_weighted_value) %></th>
+      <th><%= l(:label_project_percent_done_notes) %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% visible_included_rows.each do |row| %>
+      <tr class="<%= cycle('odd', 'even') %>">
+        <td><%= link_to "##{row.issue_id}", issue_path(row.issue) %></td>
+        <td><%= link_to h(row.subject), issue_path(row.issue) %></td>
+        <td><%= h(row.status_name) %></td>
+        <td><%= number_with_precision(row.original_done_ratio, :precision => 0) %>%</td>
+        <td><%= number_with_precision(row.effective_done_ratio, :precision => 0) %>%</td>
+        <td><%= row.estimated_hours.present? ? number_with_precision(row.estimated_hours, :precision => 2) : '-' %></td>
+        <td><%= number_with_precision(row.applied_weight, :precision => 2) %></td>
+        <td><%= number_with_precision(row.weighted_value, :precision => 2) %></td>
+        <td><%= row.notes.map { |note| project_percent_done_breakdown_note_label(note) }.join(', ') %></td>
+      </tr>
+    <% end %>
+    <% if visible_included_rows.empty? %>
+      <tr><td colspan="9"><%= l(:label_no_data) %></td></tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="6"><strong><%= l(:label_total) %></strong></td>
+      <td><strong><%= number_with_precision(@result.total_weight, :precision => 2) %></strong></td>
+      <td><strong><%= number_with_precision(total_weighted_value, :precision => 2) %></strong></td>
+      <td>
+        <strong>
+          <%= l(:text_project_percent_done_total_formula,
+                :weighted_value => number_with_precision(total_weighted_value, :precision => 2),
+                :total_weight => number_with_precision(@result.total_weight, :precision => 2),
+                :percent => project_percent_done_label(@result)) %>
+        </strong>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<h3><%= l(:label_project_percent_done_not_included_issues) %></h3>
+<% if hidden_not_included_count.positive? %>
+  <p class="warning"><%= l(:text_project_percent_done_hidden_not_included_issues, :count => hidden_not_included_count) %></p>
+<% end %>
+
+<table class="list issues">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th><%= l(:field_subject) %></th>
+      <th><%= l(:field_status) %></th>
+      <th><%= l(:field_done_ratio) %></th>
+      <th><%= l(:field_estimated_hours) %></th>
+      <th><%= l(:label_project_percent_done_reason) %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% visible_not_included_rows.each do |row| %>
+      <tr class="<%= cycle('odd', 'even') %>">
+        <td><%= link_to "##{row.issue_id}", issue_path(row.issue) %></td>
+        <td><%= link_to h(row.subject), issue_path(row.issue) %></td>
+        <td><%= h(row.status_name) %></td>
+        <td><%= number_with_precision(row.original_done_ratio, :precision => 0) %>%</td>
+        <td><%= row.estimated_hours.present? ? number_with_precision(row.estimated_hours, :precision => 2) : '-' %></td>
+        <td><%= project_percent_done_breakdown_reason_label(row.reason) %></td>
+      </tr>
+    <% end %>
+    <% if visible_not_included_rows.empty? %>
+      <tr><td colspan="6"><%= l(:label_no_data) %></td></tr>
+    <% end %>
+  </tbody>
+</table>
