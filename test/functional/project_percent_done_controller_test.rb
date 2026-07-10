@@ -26,6 +26,15 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       payload = ActiveSupport::JSON.decode(@response.body)
       assert_equal 50, payload['project_percent_done']['percent_done']
       assert_equal test_project.identifier, payload['project_percent_done']['project_identifier']
+      assert_equal(
+        %w[
+          calculation_mode closed_issue_mode estimated_issue_count issue_count
+          not_included_issue_count percent_done project_id project_identifier
+          raw_percent_done total_weight unestimated_issue_count
+          unestimated_issue_mode warnings
+        ],
+        payload['project_percent_done'].keys.sort
+      )
     end
   end
 end

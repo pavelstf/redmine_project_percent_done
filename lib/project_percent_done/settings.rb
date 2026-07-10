@@ -1,5 +1,16 @@
 module ProjectPercentDone
   module Settings
+    ALLOWED_VALUES = begin
+      values = {
+        'issue_scope' => %w[leaf_issues_only],
+        'closed_issue_mode' => %w[treat_as_100 use_done_ratio],
+        'unestimated_issue_mode' => %w[use_average_estimate use_weight_1 ignore equal_weight_all],
+        'rounding_mode' => %w[nearest_integer floor ceil]
+      }
+      values.each_value { |allowed| allowed.each(&:freeze).freeze }
+      values.freeze
+    end
+
     DEFAULTS = {
       'display_overview' => '1',
       'display_sidebar' => '1',
@@ -41,11 +52,11 @@ module ProjectPercentDone
       end
 
       def issue_scope
-        value('issue_scope')
+        normalized_value('issue_scope')
       end
 
       def closed_issue_mode
-        value('closed_issue_mode')
+        normalized_value('closed_issue_mode')
       end
 
       def treat_closed_issues_as_100?
@@ -53,11 +64,11 @@ module ProjectPercentDone
       end
 
       def unestimated_issue_mode
-        value('unestimated_issue_mode')
+        normalized_value('unestimated_issue_mode')
       end
 
       def rounding_mode
-        value('rounding_mode')
+        normalized_value('rounding_mode')
       end
 
       private
@@ -72,6 +83,12 @@ module ProjectPercentDone
 
       def enabled?(key)
         value(key).to_s == '1'
+      end
+
+      def normalized_value(key)
+        key = key.to_s
+        candidate = value(key).to_s
+        ALLOWED_VALUES.fetch(key).include?(candidate) ? candidate : DEFAULTS.fetch(key)
       end
     end
   end

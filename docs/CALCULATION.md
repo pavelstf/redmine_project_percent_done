@@ -48,6 +48,33 @@ Included issues are issues that:
 - are in the calculation scope;
 - have a positive applied weight.
 
+## Estimate Coverage
+
+The Public API reports estimate-presence coverage by eligible issue count:
+
+```text
+estimate_coverage_percent =
+  estimated eligible issues / all eligible issues * 100
+```
+
+It is `nil` when there are no eligible issues. This is not measured-hours
+coverage. An eligible issue is counted as estimated only when its
+`estimated_hours` value is positive; zero, negative, and missing estimates are
+unestimated.
+
+The coverage counts are taken before missing-estimate handling. Consequently,
+an unestimated issue ignored by the calculation still reduces estimate
+coverage.
+
+`known_estimated_hours` is the sum of positive estimates on estimated eligible
+issues included in the calculation. `imputed_weight` is the applied weight
+assigned to included unestimated issues. `total_applied_weight` is the
+denominator of the progress formula.
+
+`known_weight_percent` is `known_estimated_hours / total_applied_weight * 100`
+for hours-weighted modes. It is `nil` for equal-weight calculation and when
+there is no usable denominator.
+
 ## Not Included Issues
 
 Not included issues can be:

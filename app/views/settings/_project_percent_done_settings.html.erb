@@ -1,3 +1,23 @@
+<% setting_help_button = lambda do |help_key, label_key|
+     content_tag(
+       :button,
+       '',
+       type: 'button',
+       class: 'icon icon-help ppd-setting-help',
+       data: { tooltip: l(help_key) },
+       aria: {
+         label: l(:label_project_percent_done_setting_help, setting: l(label_key)),
+         controls: 'ppd-settings-tooltip',
+         describedby: 'ppd-settings-tooltip',
+         expanded: 'false'
+       }
+     )
+   end %>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'project_percent_done.css?v=1.1.1', plugin: 'redmine_project_percent_done' %>
+<% end %>
+
 <fieldset class="box">
   <legend><%= l(:label_project_percent_done_display_locations) %></legend>
 
@@ -6,7 +26,7 @@
     <label>
       <%= check_box_tag 'settings[display_overview]', '1', @settings['display_overview'].to_s == '1' %>
       <%= l(:label_project_percent_done_display_overview) %>
-    </label>
+    </label><%= setting_help_button.call(:help_project_percent_done_display_overview, :label_project_percent_done_display_overview) %>
   </p>
 
   <p>
@@ -14,7 +34,7 @@
     <label>
       <%= check_box_tag 'settings[display_sidebar]', '1', @settings['display_sidebar'].to_s == '1' %>
       <%= l(:label_project_percent_done_display_sidebar) %>
-    </label>
+    </label><%= setting_help_button.call(:help_project_percent_done_display_sidebar, :label_project_percent_done_display_sidebar) %>
   </p>
 
   <p>
@@ -22,7 +42,7 @@
     <label>
       <%= check_box_tag 'settings[display_project_tab]', '1', @settings['display_project_tab'].to_s == '1' %>
       <%= l(:label_project_percent_done_display_project_tab) %>
-    </label>
+    </label><%= setting_help_button.call(:help_project_percent_done_display_project_tab, :label_project_percent_done_display_project_tab) %>
   </p>
 
   <p>
@@ -30,7 +50,7 @@
     <label>
       <%= check_box_tag 'settings[enable_rest_api]', '1', @settings['enable_rest_api'].to_s == '1' %>
       <%= l(:label_project_percent_done_enable_rest_api) %>
-    </label>
+    </label><%= setting_help_button.call(:help_project_percent_done_enable_rest_api, :label_project_percent_done_enable_rest_api) %>
   </p>
 
 </fieldset>
@@ -39,7 +59,7 @@
   <legend><%= l(:label_project_percent_done_calculation_settings) %></legend>
 
   <p>
-    <label><%= l(:label_project_percent_done_issue_scope) %></label>
+    <label><%= l(:label_project_percent_done_issue_scope) %></label><%= setting_help_button.call(:help_project_percent_done_issue_scope, :label_project_percent_done_issue_scope) %>
     <%= select_tag 'settings[issue_scope]',
       options_for_select(
         [
@@ -50,7 +70,7 @@
   </p>
 
   <p>
-    <label><%= l(:label_project_percent_done_closed_issue_mode) %></label>
+    <label><%= l(:label_project_percent_done_closed_issue_mode) %></label><%= setting_help_button.call(:help_project_percent_done_closed_issue_mode, :label_project_percent_done_closed_issue_mode) %>
     <%= select_tag 'settings[closed_issue_mode]',
       options_for_select(
         [
@@ -62,7 +82,7 @@
   </p>
 
   <p>
-    <label><%= l(:label_project_percent_done_unestimated_issue_mode) %></label>
+    <label><%= l(:label_project_percent_done_unestimated_issue_mode) %></label><%= setting_help_button.call(:help_project_percent_done_unestimated_issue_mode, :label_project_percent_done_unestimated_issue_mode) %>
     <%= select_tag 'settings[unestimated_issue_mode]',
       options_for_select(
         [
@@ -76,7 +96,7 @@
   </p>
 
   <p>
-    <label><%= l(:label_project_percent_done_rounding_mode) %></label>
+    <label><%= l(:label_project_percent_done_rounding_mode) %></label><%= setting_help_button.call(:help_project_percent_done_rounding_mode, :label_project_percent_done_rounding_mode) %>
     <%= select_tag 'settings[rounding_mode]',
       options_for_select(
         [
@@ -90,3 +110,94 @@
 </fieldset>
 
 <p class="info"><%= l(:text_project_percent_done_absolute_progress_notice) %></p>
+
+<div id="ppd-settings-tooltip"
+     class="ppd-settings-tooltip"
+     role="tooltip"
+     aria-hidden="true"
+     hidden></div>
+
+<script>
+  (function() {
+    var tooltip = document.getElementById('ppd-settings-tooltip');
+    var activeTrigger = null;
+
+    if (!tooltip || tooltip.dataset.bound === 'true') return;
+
+    tooltip.dataset.bound = 'true';
+    document.body.appendChild(tooltip);
+
+    function positionTooltip(trigger) {
+      window.requestAnimationFrame(function() {
+        if (activeTrigger !== trigger || tooltip.hidden) return;
+
+        var triggerRect = trigger.getBoundingClientRect();
+        var tooltipRect = tooltip.getBoundingClientRect();
+        var edgeGap = 8;
+        var left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+        left = Math.max(edgeGap, Math.min(left, window.innerWidth - tooltipRect.width - edgeGap));
+
+        var top = triggerRect.bottom + edgeGap;
+        if (top + tooltipRect.height > window.innerHeight - edgeGap &&
+            triggerRect.top - tooltipRect.height - edgeGap >= edgeGap) {
+          top = triggerRect.top - tooltipRect.height - edgeGap;
+        }
+
+        tooltip.style.left = Math.round(left) + 'px';
+        tooltip.style.top = Math.round(top) + 'px';
+        tooltip.style.visibility = 'visible';
+      });
+    }
+
+    function showTooltip(trigger) {
+      if (activeTrigger && activeTrigger !== trigger) {
+        activeTrigger.setAttribute('aria-expanded', 'false');
+      }
+
+      activeTrigger = trigger;
+      tooltip.textContent = trigger.dataset.tooltip;
+      tooltip.hidden = false;
+      tooltip.style.visibility = 'hidden';
+      tooltip.setAttribute('aria-hidden', 'false');
+      trigger.setAttribute('aria-expanded', 'true');
+      positionTooltip(trigger);
+    }
+
+    function hideTooltip(trigger) {
+      if (!activeTrigger || (trigger && activeTrigger !== trigger)) return;
+
+      activeTrigger.setAttribute('aria-expanded', 'false');
+      activeTrigger = null;
+      tooltip.hidden = true;
+      tooltip.style.visibility = 'hidden';
+      tooltip.setAttribute('aria-hidden', 'true');
+    }
+
+    document.querySelectorAll('.ppd-setting-help').forEach(function(trigger) {
+      if (trigger.dataset.tooltipBound === 'true') return;
+
+      trigger.dataset.tooltipBound = 'true';
+      trigger.addEventListener('mouseenter', function() { showTooltip(trigger); });
+      trigger.addEventListener('mouseleave', function() {
+        if (document.activeElement !== trigger) hideTooltip(trigger);
+      });
+      trigger.addEventListener('focus', function() { showTooltip(trigger); });
+      trigger.addEventListener('blur', function() { hideTooltip(trigger); });
+      trigger.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        showTooltip(trigger);
+      });
+      trigger.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          hideTooltip(trigger);
+          trigger.blur();
+        }
+      });
+    });
+
+    document.addEventListener('click', function() { hideTooltip(); });
+    window.addEventListener('resize', function() { hideTooltip(); });
+    window.addEventListener('scroll', function() { hideTooltip(); }, true);
+  })();
+</script>

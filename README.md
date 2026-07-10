@@ -28,7 +28,7 @@ The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redm
 | Rails | Follows the installed Redmine version |
 | Database | MariaDB/MySQL, PostgreSQL, SQLite where supported by Redmine |
 
-The plugin has no database migrations in version 1.0.2.
+The plugin has no database migrations in version 1.1.1.
 
 ## Installation
 
@@ -69,7 +69,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 touch tmp/restart.txt
 ```
 
-Version 1.0.2 does not require database migration, but running the standard Redmine plugin migration command is safe.
+Version 1.1.1 does not require database migration, but running the standard Redmine plugin migration command is safe.
 
 ## Default Behavior
 
@@ -117,6 +117,10 @@ Calculation settings:
   - Round down
   - Round up
 
+Administration settings include compact help icons with localized English and
+Bulgarian guidance. The help tooltips support mouse hover, keyboard focus, and
+tap without using native `title` tooltips, avoiding duplicate tooltip display.
+
 ## REST API
 
 Enable the REST API endpoint in plugin settings, then request:
@@ -147,6 +151,26 @@ Example response:
 }
 ```
 
+## Public Integration API
+
+Version 1.1.0 provides a versioned in-process aggregate API for other Redmine
+plugins. It is loaded during normal plugin initialization and does not depend
+on the optional REST endpoint:
+
+```ruby
+capabilities = ProjectPercentDone::PublicApi::V1.capabilities
+result = ProjectPercentDone::PublicApi::V1.calculate(:project => project)
+
+result.progress_available
+result.raw_percent_done
+result.display_percent_done
+result.estimate_coverage_percent
+```
+
+The API is live and non-persistent. It returns immutable value objects with
+aggregate counts and weights only; it does not expose issues or issue IDs.
+See [Public API V1](docs/PUBLIC_API_V1.md) for the complete contract.
+
 ## Security Note
 
 The project percentage is calculated from all issues in the project, regardless of the current user's issue visibility.
@@ -155,7 +179,7 @@ The details page shows issue rows only for issues visible to the current user. T
 
 ## Performance
 
-Version 1.0.2 uses live calculation.
+Version 1.1.1 uses live calculation.
 
 To reduce request overhead:
 
@@ -183,6 +207,7 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 ## Documentation
 
 - [Calculation behavior](docs/CALCULATION.md)
+- [Public API V1](docs/PUBLIC_API_V1.md)
 - [Deployment notes](docs/DEPLOYMENT.md)
 - [Release checklist](docs/RELEASE.md)
 - [Changelog](CHANGELOG.md)

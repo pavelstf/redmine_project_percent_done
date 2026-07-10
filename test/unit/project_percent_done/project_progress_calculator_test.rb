@@ -40,6 +40,7 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
       assert_equal 0, result.percent_done
       assert_equal 1, result.issue_count
       assert_equal 10.0, result.total_weight
+      assert_equal 1, result.excluded_parent_issue_count
     end
   end
 
@@ -80,6 +81,59 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
     end
   end
 
+  def test_uses_status_default_done_ratio_when_redmine_is_status_derived
+    status = IssueStatus.create!(
+      :name => "Progress Status #{SecureRandom.hex(4)}",
+      :default_done_ratio => 70
+    )
+    create_test_issue(:status => status, :done_ratio => 10, :estimated_hours => 10)
+    Setting.issue_done_ratio = 'issue_status'
+
+    with_project_percent_done_settings('closed_issue_mode' => 'use_done_ratio') do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 70, result.percent_done
+    end
+  ensure
+    Setting.issue_done_ratio = 'issue_field'
+  end
+
+  def test_applies_all_rounding_modes
+    create_test_issue(:done_ratio => 0, :estimated_hours => 1)
+    create_test_issue(:done_ratio => 100, :estimated_hours => 2)
+
+    {
+      'nearest_integer' => 67,
+      'floor' => 66,
+      'ceil' => 67
+    }.each do |rounding_mode, expected|
+      with_project_percent_done_settings('rounding_mode' => rounding_mode) do
+        result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+        assert_equal expected, result.percent_done
+        assert_in_delta 66.6667, result.raw_percent_done, 0.0001
+      end
+    end
+  end
+
+  def test_does_not_roll_up_subproject_issues
+    subproject = Project.create!(
+      :name => "Subproject Percent Done Test #{SecureRandom.hex(4)}",
+      :identifier => "ppd-subproject-#{SecureRandom.hex(4)}",
+      :parent => test_project,
+      :is_public => true
+    )
+    create_test_issue(:done_ratio => 100, :estimated_hours => 10)
+    create_test_issue(:project => subproject, :done_ratio => 0, :estimated_hours => 100)
+
+    with_project_percent_done_settings({}) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 100, result.percent_done
+      assert_equal 1, result.all_project_issue_count
+    end
+  end
+
   def test_uses_average_estimate_for_unestimated_issues
     create_test_issue(:done_ratio => 100, :estimated_hours => 10)
     create_test_issue(:done_ratio => 0, :estimated_hours => nil)
@@ -93,6 +147,33 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
     end
   end
 
+  def test_average_estimate_mode_uses_fallback_weight_when_all_issues_are_unestimated
+    create_test_issue(:done_ratio => 100, :estimated_hours => nil)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 0)
+
+    with_project_percent_done_settings('unestimated_issue_mode' => 'use_average_estimate') do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 50, result.percent_done
+      assert_equal 2.0, result.total_weight
+      assert_equal 2, result.unestimated_eligible_issue_count
+      assert_equal 2.0, result.imputed_weight
+    end
+  end
+
+  def test_uses_weight_one_for_unestimated_issues
+    create_test_issue(:done_ratio => 100, :estimated_hours => 3)
+    create_test_issue(:done_ratio => 0, :estimated_hours => nil)
+
+    with_project_percent_done_settings('unestimated_issue_mode' => 'use_weight_1') do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 75, result.percent_done
+      assert_equal 4.0, result.total_weight
+      assert_equal 1.0, result.imputed_weight
+    end
+  end
+
   def test_ignores_unestimated_issues_when_configured
     create_test_issue(:done_ratio => 100, :estimated_hours => 10)
     create_test_issue(:done_ratio => 0, :estimated_hours => nil)
@@ -102,6 +183,9 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
 
       assert_equal 100, result.percent_done
       assert_equal 10.0, result.total_weight
+      assert_equal 2, result.eligible_issue_count
+      assert_equal 1, result.unestimated_eligible_issue_count
+      assert_equal 1, result.ignored_unestimated_issue_count
     end
   end
 
@@ -114,6 +198,21 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
 
       assert_equal 50, result.percent_done
       assert_equal 2.0, result.total_weight
+    end
+  end
+
+  def test_zero_and_negative_estimates_are_unestimated
+    create_test_issue(:done_ratio => 100, :estimated_hours => 5)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 0)
+    negative_estimate_issue = create_test_issue(:done_ratio => 0, :estimated_hours => nil)
+    negative_estimate_issue.update_column(:estimated_hours, -2)
+
+    with_project_percent_done_settings('unestimated_issue_mode' => 'ignore') do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 1, result.estimated_eligible_issue_count
+      assert_equal 2, result.unestimated_eligible_issue_count
+      assert_equal 2, result.ignored_unestimated_issue_count
     end
   end
 end

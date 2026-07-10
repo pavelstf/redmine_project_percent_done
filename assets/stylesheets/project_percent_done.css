@@ -1,0 +1,59 @@
+.ppd-setting-help {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 12px 12px !important;
+  border: 0 !important;
+  border-radius: 2px;
+  box-shadow: none !important;
+  box-sizing: border-box;
+  cursor: help;
+  height: 15px;
+  line-height: 15px;
+  margin: 0 0 0 4px;
+  min-height: 15px;
+  min-width: 15px;
+  opacity: 0.38;
+  padding: 0 !important;
+  vertical-align: middle;
+  width: 15px;
+}
+
+.ppd-setting-help:hover {
+  background-color: transparent !important;
+  opacity: 0.75;
+  outline: 0 !important;
+}
+
+.ppd-setting-help:focus {
+  background-color: transparent !important;
+  opacity: 1;
+  outline: 1px dotted #1f6fb2 !important;
+  outline-offset: 1px;
+}
+
+.ppd-settings-tooltip {
+  background: #1f2937;
+  border: 1px solid #111827;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+  box-sizing: border-box;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: calc(100vw - 24px);
+  padding: 9px 11px;
+  pointer-events: none;
+  position: fixed;
+  text-align: left;
+  visibility: hidden;
+  white-space: normal;
+  width: 320px;
+  z-index: 10000;
+}
+
+.ppd-settings-tooltip[hidden] {
+  display: none;
+}
