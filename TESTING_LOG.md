@@ -41,6 +41,20 @@ Validation notes:
     `A5DEFBC04FE6C5FBABB42661B80D21B33702147100EFB9C9C97E3E5315466388`
 - production was confirmed OK by the user on 2026-07-15; version `1.1.1`
   is installed and working as expected on both GCR staging and GCR production;
-- full Redmine plugin tests still require a Redmine checkout and test
-  environment; this plugin-only Windows workspace does not contain Redmine's
-  root `test/test_helper`.
+- added a repeatable local Redmine 6.1.2 test runtime with portable Ruby
+  3.3.11, SQLite, plugin-specific test databases, and reusable setup/runner
+  parameters for other plugin repositories;
+- extracted the runtime logic into the installed `redmine-plugin-test-runtime`
+  skill and published it in `pavelstf/Codex-Skills` at commit `43ef12a`;
+- moved the prepared runtime to the shared location
+  `C:\RedmineTestRuntimes\redmine-6.1.2` and verified the repository wrappers
+  without environment overrides;
+- full Redmine plugin suite passed on 2026-07-15:
+  - `28 runs`
+  - `130 assertions`
+  - `0 failures`
+  - `0 errors`
+  - `0 skips`
+- the Windows junction/subst execution emits non-fatal duplicate constant
+  warnings because the same plugin files are visible through physical and
+  mapped paths; the suite result is green.

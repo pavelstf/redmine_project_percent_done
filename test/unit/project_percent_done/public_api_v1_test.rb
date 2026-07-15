@@ -13,7 +13,7 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
 
       assert_equal 'project_percent_done', capabilities.contract_name
       assert_equal '1.0', capabilities.contract_version
-      assert_equal '1.1.0', capabilities.plugin_version
+      assert_equal '1.1.1', capabilities.plugin_version
       assert_equal '1.0', capabilities.algorithm_version
       assert_equal 'live', capabilities.calculation_mode
       assert_equal 'none', capabilities.persistence_mode

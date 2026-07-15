@@ -50,14 +50,17 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
       :identifier => "ppd-other-#{SecureRandom.hex(4)}",
       :is_public => true
     )
-    parent = create_test_issue(:done_ratio => 80, :estimated_hours => 10)
-    create_test_issue(:project => other_project, :parent_issue_id => parent.id, :done_ratio => 0, :estimated_hours => 10)
+    with_settings(:cross_project_subtasks => 'system') do
+      parent = create_test_issue(:done_ratio => 80, :estimated_hours => 10)
+      create_test_issue(:project => other_project, :parent_issue_id => parent.id, :done_ratio => 0, :estimated_hours => 10)
 
-    with_project_percent_done_settings({}) do
-      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+      with_project_percent_done_settings({}) do
+        result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
 
-      assert_equal 80, result.percent_done
-      assert_equal 1, result.issue_count
+        assert_equal 0, result.percent_done
+        assert_equal 1, result.issue_count
+        assert_equal 10.0, result.total_weight
+      end
     end
   end
 

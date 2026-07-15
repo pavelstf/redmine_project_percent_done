@@ -1,7 +1,10 @@
-require File.expand_path('../../../test/test_helper', __FILE__)
+redmine_root = ENV.fetch('REDMINE_ROOT', Dir.pwd)
+require File.expand_path('test/test_helper', redmine_root)
 require 'securerandom'
 
 module ProjectPercentDoneTestSupport
+  private
+
   def with_project_percent_done_settings(settings)
     previous_settings = Setting.plugin_redmine_project_percent_done
     Setting.plugin_redmine_project_percent_done = ProjectPercentDone::Settings::DEFAULTS.merge(settings)
