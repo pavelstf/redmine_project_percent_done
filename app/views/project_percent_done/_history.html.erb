@@ -1,0 +1,227 @@
+<% chart_mode = @history_chart_mode %>
+<% change_mode = @history_change_mode %>
+<% chart_data = @history_entries.map do |entry|
+     snapshot = entry.snapshot
+     {
+       :date => entry.period_end.iso8601,
+       :state => entry.state,
+       :percent => snapshot.try(:display_percent_done),
+       :coverage => snapshot.try(:estimate_coverage_percent),
+       :issues => snapshot.try(:all_project_issue_count),
+       :hours => snapshot.try(:known_estimated_hours),
+       :spent_hours => snapshot.try(:spent_hours_total),
+       :hours_before_start => snapshot.try(:hours_before_start),
+       :hours_after_end => snapshot.try(:hours_after_planned_end),
+       :elapsed_plan_percent => snapshot.try(:elapsed_plan_percent),
+       :schedule_variance => snapshot.try(:schedule_variance_points),
+       :plan_phase => snapshot.try(:plan_phase),
+       :plan_changed => snapshot.try(:observed_plan_changed?),
+       :source => snapshot.try(:snapshot_source),
+       :timing => snapshot.try(:timing),
+       :deviation => snapshot.try(:deviation_seconds)
+     }
+   end %>
+<% content_for :header_tags do %>
+<%= stylesheet_link_tag 'project_percent_done.css?v=1.2.0-r10', :plugin => 'redmine_project_percent_done' %>
+<% end %>
+
+<section class="ppd-history" data-ppd-history data-user-id="<%= User.current.id %>"
+         data-selected-period="<%= @history_timeline.selected %>"
+         data-selected-chart-mode="<%= chart_mode %>" data-selected-change-mode="<%= change_mode %>"
+         data-default-chart-mode="<%= chart_mode %>" data-default-change-mode="<%= change_mode %>"
+         data-chart="<%= html_escape(chart_data.to_json) %>">
+  <h2><%= l(:label_project_percent_done_history) %></h2>
+  <% latest_plan_snapshot = @history_entries.reverse_each.find { |entry| entry.snapshot }.try(:snapshot) %>
+  <% if latest_plan_snapshot %>
+    <div class="ppd-plan-summary">
+      <p><strong><%= l(:label_project_percent_done_history_observed_plan) %>:</strong>
+        <%= latest_plan_snapshot.project_start_date ? format_date(latest_plan_snapshot.project_start_date) : '-' %>
+        &rarr;
+        <%= latest_plan_snapshot.project_planned_end_date ? format_date(latest_plan_snapshot.project_planned_end_date) : '-' %>
+        (<%= l("label_project_percent_done_history_plan_phase_#{latest_plan_snapshot.plan_phase}", :default => latest_plan_snapshot.plan_phase) %>)
+      </p>
+      <% if @history_forecast.available? %>
+        <p><strong><%= l(:label_project_percent_done_history_forecast) %>:</strong>
+          <%= format_date(@history_forecast.projected_end_date) %>
+          (<%= l(:text_project_percent_done_history_forecast_basis,
+                 :points => @history_forecast.sample_size,
+                 :slope => number_with_precision(@history_forecast.slope_per_day, :precision => 3),
+                 :confidence => l("label_project_percent_done_history_confidence_#{@history_forecast.confidence}")) %>;
+          <%= l(:text_project_percent_done_history_forecast_variance,
+                 :days => @history_forecast.planned_end_variance_days) %>)</p>
+      <% else %>
+        <p><strong><%= l(:label_project_percent_done_history_forecast) %>:</strong>
+          <%= l("text_project_percent_done_history_forecast_#{@history_forecast.reason}",
+                :default => l(:text_project_percent_done_history_forecast_unavailable)) %></p>
+      <% end %>
+      <p class="info"><%= l(:text_project_percent_done_history_forecast_shadow_notice) %></p>
+    </div>
+  <% end %>
+  <form action="<%= project_percent_done_history_path(:project_id => @project.identifier) %>" method="get" class="ppd-history-controls">
+    <label><%= l(:label_project_percent_done_history_period) %>
+      <%= select_tag :history_period, options_for_select(@history_timeline.options, @history_timeline.selected), :data => { :ppd_pref => 'period' } %></label>
+    <label><%= l(:label_project_percent_done_history_chart_mode_control) %>
+      <%= select_tag :history_chart_mode, options_for_select([
+        [l(:label_project_percent_done_history_percent_only), 'percent_only'],
+        [l(:label_project_percent_done_history_extended), 'extended']
+      ], chart_mode), :data => { :ppd_pref => 'chart_mode' } %></label>
+    <label><%= l(:label_project_percent_done_history_change_display_control) %>
+      <%= select_tag :history_change_mode, options_for_select([
+        [l(:label_project_percent_done_history_change_hidden), 'hidden'],
+        [l(:label_project_percent_done_history_change_pp), 'percentage_points'],
+        [l(:label_project_percent_done_history_change_relative), 'relative_percent']
+      ], change_mode), :data => { :ppd_pref => 'change_mode' } %></label>
+    <%= submit_tag l(:button_apply), :class => 'button-small' %>
+  </form>
+
+  <% if @history_entries.any? %>
+    <% if @history_entries.none?(&:snapshot) %>
+      <p class="info"><%= l(:text_project_percent_done_history_no_official_snapshots) %></p>
+    <% end %>
+    <div class="ppd-history-chart" role="img" aria-label="<%= l(:label_project_percent_done_history_chart_accessible) %>">
+      <svg viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="ppd-history-indicators" hidden></div>
+    </div>
+    <div class="ppd-history-legend">
+      <% %w[active closed archived out_of_scope planned_not_started not_observed disabled missing].each do |state| %>
+        <span class="ppd-state ppd-state-<%= state %>"><%= project_percent_done_history_state_label(state) %></span>
+      <% end %>
+    </div>
+
+    <table class="list ppd-history-table">
+      <thead><tr>
+        <th><%= l(:label_project_percent_done_history_period_end) %></th>
+        <th><%= l(:label_project_percent_done_history_state) %></th>
+        <th><%= l(:label_project_percent_done) %></th>
+        <th><%= l(:label_project_percent_done_history_change) %></th>
+        <th><%= l(:label_project_percent_done_history_issue_counts) %></th>
+        <th><%= l(:field_estimated_hours) %></th>
+        <th><%= l(:label_project_percent_done_history_coverage) %></th>
+        <th><%= l(:label_project_percent_done_history_observed_plan) %></th>
+        <th><%= l(:label_project_percent_done_history_reported_hours) %></th>
+        <th><%= l(:label_project_percent_done_history_provenance) %></th>
+      </tr></thead>
+      <tbody>
+      <% @history_table_pairs.each do |entry, index| %>
+        <% snapshot = entry.snapshot %>
+        <tr class="ppd-history-row ppd-history-row-<%= entry.state %>">
+          <td><%= format_date(entry.period_end) %></td>
+          <td><%= project_percent_done_history_state_label(entry.state) %></td>
+          <td><%= snapshot && snapshot.display_percent_done.present? ? "#{snapshot.display_percent_done}%" : '-' %></td>
+          <td data-ppd-change-index="<%= index %>"><%= project_percent_done_history_change(@history_entries, index, change_mode) || '-' %></td>
+          <td><%= snapshot ? "#{snapshot.included_issue_count || 0}/#{snapshot.eligible_issue_count || 0}/#{snapshot.all_project_issue_count || 0}" : '-' %></td>
+          <td><%= snapshot && snapshot.known_estimated_hours ? number_with_precision(snapshot.known_estimated_hours, :precision => 2) : '-' %></td>
+          <td><%= snapshot && snapshot.estimate_coverage_percent ? "#{number_with_precision(snapshot.estimate_coverage_percent, :precision => 1)}%" : '-' %></td>
+          <td class="ppd-plan-cell">
+            <% if snapshot %>
+              <span><%= snapshot.project_start_date ? format_date(snapshot.project_start_date) : '-' %> &rarr; <%= snapshot.project_planned_end_date ? format_date(snapshot.project_planned_end_date) : '-' %></span><br>
+              <span><%= l("label_project_percent_done_history_plan_phase_#{snapshot.plan_phase}", :default => snapshot.plan_phase || '-') %></span>
+              <% if snapshot.elapsed_plan_percent %><br><span><%= l(:text_project_percent_done_history_elapsed_plan, :percent => number_with_precision(snapshot.elapsed_plan_percent, :precision => 1)) %></span><% end %>
+              <% if snapshot.schedule_variance_points %><br><span><%= l(:text_project_percent_done_history_schedule_variance, :points => number_with_precision(snapshot.schedule_variance_points, :precision => 1)) %></span><% end %>
+              <% if snapshot.start_date_changed? %><br><strong><%= l(:text_project_percent_done_history_start_changed, :days => snapshot.start_date_change_days || '-') %></strong><% end %>
+              <% if snapshot.planned_end_date_changed? %><br><strong><%= l(:text_project_percent_done_history_end_changed, :days => snapshot.planned_end_date_change_days || '-') %></strong><% end %>
+              <% if snapshot.first_observed_plan? %><br><em><%= l(:label_project_percent_done_history_first_observed_plan) %></em><% end %>
+              <% snapshot.warnings.each do |warning| %><br><span class="warning"><%= l("label_project_percent_done_#{warning}", :default => warning.to_s.humanize) %></span><% end %>
+            <% else %>-<% end %>
+          </td>
+          <td class="ppd-plan-cell">
+            <% if snapshot %>
+              <%= l(:text_project_percent_done_history_hours_total, :hours => number_with_precision(snapshot.spent_hours_total || 0, :precision => 2)) %><br>
+              <%= l(:text_project_percent_done_history_hours_boundaries,
+                    :before => number_with_precision(snapshot.hours_before_start || 0, :precision => 2),
+                    :within => number_with_precision(snapshot.hours_within_plan || 0, :precision => 2),
+                    :after => number_with_precision(snapshot.hours_after_planned_end || 0, :precision => 2),
+                    :unclassified => number_with_precision(snapshot.hours_unclassified || 0, :precision => 2)) %>
+            <% else %>-<% end %>
+          </td>
+          <td>
+            <% if snapshot %><%= "#{snapshot.snapshot_source}; #{snapshot.timing}" %><%= snapshot.deviation_seconds.to_i.positive? ? " (#{distance_of_time_in_words(snapshot.deviation_seconds)} #{l(:label_project_percent_done_history_deviation)})" : '' %><% else %>-<% end %>
+            <% if User.current.admin? && snapshot %>
+              <details class="ppd-issue-history"><summary><%= l(:label_project_percent_done_history_issue_details) %></summary>
+                <% if snapshot.details_purged_at %>
+                  <p><%= l(:text_project_percent_done_history_details_purged) %></p>
+                <% elsif snapshot.issue_snapshots.exists? %>
+                  <table class="list"><thead><tr><th>#</th><th><%= l(:field_subject) %></th><th><%= l(:field_status) %></th><th><%= l(:field_done_ratio) %></th><th><%= l(:field_estimated_hours) %></th><th><%= l(:label_project_percent_done_history_included) %></th></tr></thead>
+                  <tbody><% snapshot.issue_snapshots.order(:issue_id).each do |issue_snapshot| %><tr>
+                    <td>#<%= issue_snapshot.issue_id %></td><td><%= h(issue_snapshot.subject) %></td><td><%= h(issue_snapshot.status_name) %></td>
+                    <td><%= number_with_precision(issue_snapshot.effective_done_ratio, :precision => 0) %>%</td><td><%= issue_snapshot.estimated_hours || '-' %></td><td><%= issue_snapshot.included? ? l(:general_text_Yes) : l(:general_text_No) %></td>
+                  </tr><% end %></tbody></table>
+                <% else %><p><%= l(:label_no_data) %></p><% end %>
+              </details>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+    <% if @history_page_count > 1 %>
+      <p class="pagination">
+        <% if @history_page > 1 %><%= link_to l(:label_previous), project_percent_done_history_path(:project_id => @project.identifier, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page - 1) %><% end %>
+        <span><%= l(:label_project_percent_done_history_page, :page => @history_page, :pages => @history_page_count) %></span>
+        <% if @history_page < @history_page_count %><%= link_to l(:label_next), project_percent_done_history_path(:project_id => @project.identifier, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page + 1) %><% end %>
+      </p>
+    <% end %>
+  <% else %><p class="nodata"><%= l(:label_no_data) %></p><% end %>
+
+  <% if User.current.admin? %>
+    <details class="ppd-history-purge"><summary><%= l(:label_project_percent_done_history_purge) %></summary>
+      <p class="warning"><%= l(:text_project_percent_done_history_purge_warning) %></p>
+      <form action="<%= project_percent_done_history_purge_path(:project_id => @project.identifier) %>" method="post">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        <%= hidden_field_tag :_method, 'delete' %>
+        <label><%= l(:text_project_percent_done_history_purge_confirm, :identifier => @project.identifier) %>
+          <%= text_field_tag :confirm, '', :autocomplete => 'off' %></label>
+        <%= submit_tag l(:button_delete), :class => 'button-small' %>
+      </form>
+    </details>
+  <% end %>
+</section>
+
+<script>
+  (function() {
+    var root = document.querySelector('[data-ppd-history]');
+    if (!root) return;
+    var key = 'redmine_project_percent_done.history.' + root.dataset.userId + '.';
+    root.querySelectorAll('[data-ppd-pref]').forEach(function(control) {
+      var stored = localStorage.getItem(key + control.dataset.ppdPref);
+      if (stored && Array.from(control.options).some(function(option) { return option.value === stored; })) control.value = stored;
+      control.addEventListener('change', function() { localStorage.setItem(key + control.dataset.ppdPref, control.value); });
+    });
+    var query = new URLSearchParams(window.location.search);
+    var preferenceTargets = {
+      period: ['history_period', root.dataset.selectedPeriod],
+      chart_mode: ['history_chart_mode', root.dataset.selectedChartMode],
+      change_mode: ['history_change_mode', root.dataset.selectedChangeMode]
+    };
+    var reloadControl = Array.from(root.querySelectorAll('[data-ppd-pref]')).find(function(control) {
+      var target = preferenceTargets[control.dataset.ppdPref];
+      return target && !query.has(target[0]) && control.value !== target[1];
+    });
+    if (reloadControl) {
+      reloadControl.form.submit();
+      return;
+    }
+    var data = JSON.parse(root.dataset.chart || '[]');
+    var svg = root.querySelector('svg');
+    if (!svg || !data.length) return;
+    var width = 1000, height = 280, pad = 28;
+    function point(index, value) { return [pad + index * ((width - pad * 2) / Math.max(data.length - 1, 1)), height - pad - Number(value) * ((height - pad * 2) / 100)]; }
+    function element(name, attributes) { var node = document.createElementNS('http://www.w3.org/2000/svg', name); Object.keys(attributes).forEach(function(k) { node.setAttribute(k, attributes[k]); }); return node; }
+    [0,25,50,75,100].forEach(function(value) { var p = point(0,value); svg.appendChild(element('line',{x1:pad,y1:p[1],x2:width-pad,y2:p[1],class:'ppd-chart-grid'})); });
+    var segment = [];
+    function flush() { if (segment.length > 1) svg.appendChild(element('polyline',{points:segment.join(' '),class:'ppd-chart-line'})); segment=[]; }
+    data.forEach(function(item,index) {
+      if (item.state === 'active' && item.percent !== null) {
+        var p = point(index,item.percent); segment.push(p.join(','));
+        var anomaly = item.plan_phase === 'pre_start_activity' || item.plan_phase === 'overdue_active' || item.plan_changed;
+        var circle = element('circle',{cx:p[0],cy:p[1],r:(item.source === 'promoted' || anomaly) ? 6 : 4,class:'ppd-chart-point ppd-chart-point-'+item.timing+(anomaly?' ppd-chart-plan-anomaly':'')});
+        var title = element('title',{}); title.textContent=item.date+': '+item.percent+'%'+(item.coverage === null ? '' : ', '+item.coverage+'% coverage')+(item.plan_phase ? ', '+item.plan_phase : '')+(item.spent_hours === null ? '' : ', '+item.spent_hours+'h'); circle.appendChild(title); svg.appendChild(circle);
+      } else { flush(); var marker=point(index,0); svg.appendChild(element('rect',{x:marker[0]-4,y:height-pad-4,width:8,height:8,class:'ppd-chart-state ppd-chart-state-'+item.state})); }
+    }); flush();
+    var active = data.map(function(item,index){return [item,index];}).filter(function(pair){return pair[0].state==='active' && pair[0].percent!==null;});
+    if (active.length) { var last=active[active.length-1], lp=point(last[1],last[0].percent); var text=element('text',{x:Math.min(lp[0]+8,width-55),y:Math.max(lp[1]-8,14),class:'ppd-chart-label'}); text.textContent=last[0].percent+'%'; svg.appendChild(text); }
+    var mode = root.querySelector('[name="history_chart_mode"]');
+    function indicators() { var box=root.querySelector('.ppd-history-indicators'); if(!box||!mode)return; box.hidden=mode.value!=='extended'; if(!box.hidden&&active.length){var item=active[active.length-1][0]; box.textContent='<%= j l(:label_project_percent_done_history_latest_indicators) %>: '+(item.issues==null?'-':item.issues)+' <%= j l(:label_issue_plural) %>; '+(item.hours==null?'-':item.hours)+' h; '+(item.coverage==null?'-':item.coverage+'%')+' <%= j l(:label_project_percent_done_history_coverage) %>';}};
+    if(mode){mode.addEventListener('change',indicators);indicators();}
+  })();
+</script>

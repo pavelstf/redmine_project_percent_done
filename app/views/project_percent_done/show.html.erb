@@ -1,5 +1,9 @@
 <h2><%= l(:label_project_percent_done_details) %></h2>
 
+<% if project_percent_done_history_available?(@project) %>
+  <p><%= link_to l(:label_project_percent_done_history_tab), project_percent_done_history_path(:project_id => @project.identifier) %></p>
+<% end %>
+
 <% included_url = project_percent_done_issues_filter_url(@project, @result.included_issue_ids) %>
 <% not_included_url = project_percent_done_issues_filter_url(@project, @result.not_included_issue_ids) %>
 <% visible_included_rows = project_percent_done_visible_rows(@result.included_rows) %>

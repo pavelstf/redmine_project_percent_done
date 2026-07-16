@@ -1,0 +1,298 @@
+<% @settings = ProjectPercentDone::Settings.form_values(@settings) %>
+<% history_enabled = @settings['history_enabled'].to_s == '1' %>
+<% email_enabled = @settings['history_email_enabled'].to_s == '1' %>
+<% project_fields = ProjectCustomField.where(:field_format => 'list').order(:name) %>
+<% project_date_fields = ProjectCustomField.where(:field_format => 'date').order(:name) %>
+<% selected_field = project_fields.detect { |field| field.id.to_s == @settings['history_project_type_custom_field_id'].to_s } %>
+<% selected_values = Array(@settings['history_project_type_values']).map(&:to_s) %>
+<% project_field_values = project_fields.each_with_object({}) do |field, values|
+     values[field.id.to_s] = Array(field.possible_values).map(&:to_s)
+   end %>
+<% history_validation = ProjectPercentDone::History::SettingsValidator.new.call %>
+<% last_run = ProjectPercentDoneCollectionRun.latest_first.first %>
+<% last_success = ProjectPercentDoneCollectionRun.where(:status => %w[successful recovery]).latest_first.first %>
+<% last_official = ProjectPercentDoneSnapshot.official.maximum(:period_end) %>
+<% cron_command = ProjectPercentDone::History::CronCommand.new %>
+
+<fieldset class="box ppd-history-settings" data-ppd-dependent-settings>
+  <legend><%= l(:label_project_percent_done_history_settings) %></legend>
+  <p class="info"><%= l(:text_project_percent_done_history_feature_help) %></p>
+
+  <p>
+    <%= hidden_field_tag 'settings[history_enabled]', '0' %>
+    <label><%= check_box_tag 'settings[history_enabled]', '1', history_enabled, :data => { :ppd_toggle => 'history' } %>
+      <%= l(:label_project_percent_done_history_enabled) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_enabled, :label_project_percent_done_history_enabled) %>
+  </p>
+
+  <div data-ppd-depends-on="history">
+    <p><label><%= l(:label_project_percent_done_history_detail_level) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_detail_level, :label_project_percent_done_history_detail_level) %>
+      <%= select_tag 'settings[history_detail_level]', options_for_select([
+        [l(:label_project_percent_done_history_project_only), 'project_only'],
+        [l(:label_project_percent_done_history_project_and_issues), 'project_and_issues']
+      ], @settings['history_detail_level']) %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_project_type_field) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_project_type_field, :label_project_percent_done_history_project_type_field) %>
+      <%= select_tag 'settings[history_project_type_custom_field_id]',
+          options_for_select([[l(:label_none), '']] + project_fields.map { |field| [field.name, field.id] }, @settings['history_project_type_custom_field_id']),
+          :id => 'ppd-history-project-type-field',
+          :data => { :possible_values => project_field_values.to_json } %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_project_type_values) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_project_type_values, :label_project_percent_done_history_project_type_values) %>
+      <%= select_tag 'settings[history_project_type_values][]',
+          options_for_select(selected_field ? selected_field.possible_values.map { |value| [value, value] } : [], selected_values),
+          :multiple => true, :size => 6, :id => 'ppd-history-project-type-values' %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_project_start_field) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_project_start_field, :label_project_percent_done_history_project_start_field) %>
+      <%= select_tag 'settings[history_project_start_custom_field_id]',
+          options_for_select([[l(:label_none), '']] + project_date_fields.map { |field| [field.name, field.id] }, @settings['history_project_start_custom_field_id']) %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_project_end_field) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_project_end_field, :label_project_percent_done_history_project_end_field) %>
+      <%= select_tag 'settings[history_project_planned_end_custom_field_id]',
+          options_for_select([[l(:label_none), '']] + project_date_fields.map { |field| [field.name, field.id] }, @settings['history_project_planned_end_custom_field_id']) %></p>
+
+    <p class="info"><%= l(:text_project_percent_done_history_plan_fields_optional) %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_promotion_tolerance) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_promotion_tolerance, :label_project_percent_done_history_promotion_tolerance) %>
+      <%= number_field_tag 'settings[history_promotion_tolerance_days]', @settings['history_promotion_tolerance_days'], :min => 0, :max => 3 %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_issue_retention) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_issue_retention, :label_project_percent_done_history_issue_retention) %>
+      <%= number_field_tag 'settings[history_issue_retention_weeks]', @settings['history_issue_retention_weeks'], :min => 13, :max => 520,
+          :data => { :original_value => @settings['history_issue_retention_weeks'] } %></p>
+
+    <p><label><%= l(:label_project_percent_done_history_inactive_grace) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_inactive_grace, :label_project_percent_done_history_inactive_grace) %>
+      <%= number_field_tag 'settings[history_inactive_grace_weeks]', @settings['history_inactive_grace_weeks'], :min => 0, :max => 52 %></p>
+  </div>
+</fieldset>
+
+<fieldset class="box ppd-history-settings ppd-history-conditional" data-ppd-requires-history <%= 'hidden="hidden"'.html_safe unless history_enabled %>>
+  <legend><%= l(:label_project_percent_done_history_display_defaults) %></legend>
+  <p><label><%= l(:label_project_percent_done_history_chart_mode) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_chart_mode, :label_project_percent_done_history_chart_mode) %>
+    <%= select_tag 'settings[history_chart_mode]', options_for_select([[l(:label_project_percent_done_history_percent_only), 'percent_only'], [l(:label_project_percent_done_history_extended), 'extended']], @settings['history_chart_mode']) %></p>
+  <p><label><%= l(:label_project_percent_done_history_default_period) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_default_period, :label_project_percent_done_history_default_period) %>
+    <%= select_tag 'settings[history_default_period]', options_for_select([
+      ['13', '13'], ['26', '26'], ['52', '52'], ['104', '104'],
+      [l(:label_project_percent_done_history_current_quarter), 'current_quarter'],
+      [l(:label_project_percent_done_history_current_year), 'current_year'],
+      [l(:label_project_percent_done_history_all), 'all']
+    ], @settings['history_default_period']) %></p>
+  <p><label><%= l(:label_project_percent_done_history_change_display) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_change_display, :label_project_percent_done_history_change_display) %>
+    <%= select_tag 'settings[history_change_display]', options_for_select([
+      [l(:label_project_percent_done_history_change_hidden), 'hidden'],
+      [l(:label_project_percent_done_history_change_pp), 'percentage_points'],
+      [l(:label_project_percent_done_history_change_relative), 'relative_percent']
+    ], @settings['history_change_display']) %></p>
+  <p><label><%= l(:label_project_percent_done_history_reporting_year) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_reporting_year, :label_project_percent_done_history_reporting_year) %>
+    <%= select_tag 'settings[history_reporting_year]', options_for_select([[l(:label_project_percent_done_history_calendar), 'calendar'], [l(:label_project_percent_done_history_fiscal), 'fiscal']], @settings['history_reporting_year']) %></p>
+  <p><label><%= l(:label_project_percent_done_history_fiscal_start) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_fiscal_start, :label_project_percent_done_history_fiscal_start) %>
+    <%= select_tag 'settings[history_fiscal_year_start_month]', options_for_select((1..12).map { |month| [I18n.l(Date.new(2020, month, 1), :format => '%B'), month] }, @settings['history_fiscal_year_start_month'].to_i) %></p>
+</fieldset>
+
+<fieldset class="box ppd-history-settings ppd-history-conditional" data-ppd-dependent-settings data-ppd-requires-history <%= 'hidden="hidden"'.html_safe unless history_enabled %>>
+  <legend><%= l(:label_project_percent_done_history_email_settings) %></legend>
+  <p><%= hidden_field_tag 'settings[history_email_enabled]', '0' %>
+    <label><%= check_box_tag 'settings[history_email_enabled]', '1', email_enabled, :data => { :ppd_toggle => 'email' } %>
+      <%= l(:label_project_percent_done_history_email_enabled) %></label>
+    <%= setting_help_button.call(:help_project_percent_done_history_email_enabled, :label_project_percent_done_history_email_enabled) %></p>
+  <div data-ppd-depends-on="email">
+    <p><label><%= l(:label_project_percent_done_history_notification_level) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_notification_level, :label_project_percent_done_history_notification_level) %>
+      <%= select_tag 'settings[history_email_notification_level]', options_for_select([
+        [l(:label_project_percent_done_history_weekly_only), 'weekly_only'],
+        [l(:label_project_percent_done_history_weekly_problems), 'weekly_plus_problems'],
+        [l(:label_project_percent_done_history_every_execution), 'every_execution']
+      ], @settings['history_email_notification_level']) %></p>
+    <p><label><%= l(:label_project_percent_done_history_recipient_mode) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_recipient_mode, :label_project_percent_done_history_recipient_mode) %>
+      <%= select_tag 'settings[history_email_recipient_mode]', options_for_select([['TO', 'to'], ['BCC', 'bcc']], @settings['history_email_recipient_mode']) %></p>
+    <p><label><%= l(:label_project_percent_done_history_recipients) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_recipients, :label_project_percent_done_history_recipients) %>
+      <%= text_field_tag 'settings[history_email_recipients]', @settings['history_email_recipients'], :size => 80, :required => email_enabled %></p>
+    <p><label><%= l(:label_project_percent_done_history_subject) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_subject, :label_project_percent_done_history_subject) %>
+      <%= text_field_tag 'settings[history_email_subject_template]', @settings['history_email_subject_template'], :size => 80, :maxlength => 200 %></p>
+  </div>
+</fieldset>
+
+<fieldset class="box ppd-history-settings ppd-history-conditional ppd-settings-cron" data-ppd-requires-history <%= 'hidden="hidden"'.html_safe unless history_enabled %>>
+  <legend><%= l(:label_project_percent_done_history_cron) %></legend>
+  <p><%= l(:text_project_percent_done_history_cron_info) %></p>
+
+  <section class="ppd-cron-job">
+    <h4><%= l(:label_project_percent_done_history_cron_collection) %></h4>
+    <p><%= l(:text_project_percent_done_history_cron_behavior) %></p>
+
+    <div class="ppd-cron-schedule">
+      <strong><%= l(:label_project_percent_done_history_cron_schedule) %></strong>
+      <code><%= h(ProjectPercentDone::History::CronCommand::SCHEDULE_EXAMPLE) %></code>
+      <span><%= l(:text_project_percent_done_history_cron_schedule) %></span>
+    </div>
+
+    <% [
+         ['rake', :label_project_percent_done_history_rake_command, cron_command.rake_command],
+         ['full-cron', :label_project_percent_done_history_full_cron_command, cron_command.full_command]
+       ].each do |key, label, command| %>
+      <div class="ppd-command-panel">
+        <div class="ppd-command-header">
+          <strong><%= l(label) %></strong>
+          <button type="button"
+                  class="icon icon-copy ppd-copy-command"
+                  data-copy-target="ppd-history-<%= key %>-command"
+                  data-copy-label="<%= h(l(:button_project_percent_done_copy_command)) %>"
+                  data-copy-success="<%= h(l(:notice_project_percent_done_command_copied)) %>"
+                  data-copy-error="<%= h(l(:error_project_percent_done_command_copy_failed)) %>"
+                  title="<%= h(l(:button_project_percent_done_copy_command)) %>"
+                  aria-label="<%= h(l(:button_project_percent_done_copy_command)) %>">
+            <span aria-live="polite"><%= l(:button_project_percent_done_copy_command) %></span>
+          </button>
+        </div>
+        <div class="ppd-command-code" tabindex="0">
+          <code id="ppd-history-<%= key %>-command"><%= h(command) %></code>
+        </div>
+      </div>
+    <% end %>
+  </section>
+
+  <p class="ppd-cron-environment"><em><%= l(
+    :text_project_percent_done_history_cron_environment,
+    :root => cron_command.rails_root,
+    :environment => cron_command.rails_env
+  ) %></em></p>
+  <% unless cron_command.virtual_env_detected? %>
+    <p class="warning"><%= l(:text_project_percent_done_history_cron_virtualenv_missing) %></p>
+  <% end %>
+</fieldset>
+
+<fieldset class="box ppd-history-diagnostics">
+  <legend><%= l(:label_project_percent_done_history_diagnostics) %></legend>
+  <% if history_validation.errors.any? %><div class="flash error"><%= history_validation.errors.map { |code| l("text_project_percent_done_#{code}", :default => code) }.join('; ') %></div><% end %>
+  <% if last_run && last_run.started_at < 8.days.ago %><div class="flash warning"><%= l(:text_project_percent_done_history_overdue) %></div><% end %>
+  <table class="list"><tbody>
+    <tr><th><%= l(:label_project_percent_done_history_last_attempt) %></th><td><%= last_run ? "#{format_time(last_run.started_at)} (#{last_run.status})" : l(:label_no_data) %></td></tr>
+    <tr><th><%= l(:label_project_percent_done_history_last_success) %></th><td><%= last_success ? format_time(last_success.started_at) : l(:label_no_data) %></td></tr>
+    <tr><th><%= l(:label_project_percent_done_history_last_period) %></th><td><%= last_official || l(:label_no_data) %></td></tr>
+    <% if last_run %>
+      <tr><th><%= l(:label_project_percent_done_history_run_counts) %></th><td><%= "#{last_run.projects_succeeded}/#{last_run.projects_processed}; #{last_run.snapshots_created} + #{last_run.snapshots_promoted}" %></td></tr>
+      <tr><th><%= l(:label_project_percent_done_history_email_status) %></th><td><%= last_run.email_status %></td></tr>
+      <tr><th><%= l(:label_project_percent_done_history_duration) %></th><td><%= last_run.duration_ms ? "#{last_run.duration_ms} ms" : '-' %></td></tr>
+    <% end %>
+  </tbody></table>
+  <p class="buttons">
+    <%= link_to l(:button_project_percent_done_history_preview), project_percent_done_history_preview_path,
+        :method => :post, :class => 'icon icon-magnifier ppd-diagnostic-action' %>
+    <%= link_to l(:button_project_percent_done_history_capture), project_percent_done_history_capture_path,
+        :method => :post, :class => 'icon icon-save ppd-diagnostic-action' %>
+    <%= link_to l(:button_project_percent_done_history_test_email), project_percent_done_history_test_email_path,
+        :method => :post, :class => 'icon icon-email ppd-diagnostic-action' %>
+  </p>
+</fieldset>
+
+<script>
+  (function() {
+    document.querySelectorAll('[data-ppd-dependent-settings]').forEach(function(group) {
+      function refresh() {
+        group.querySelectorAll('[data-ppd-depends-on]').forEach(function(block) {
+          var toggle = group.querySelector('[data-ppd-toggle="' + block.dataset.ppdDependsOn + '"]');
+          var enabled = toggle && toggle.checked;
+          block.hidden = !enabled;
+        });
+      }
+      group.querySelectorAll('[data-ppd-toggle]').forEach(function(toggle) { toggle.addEventListener('change', refresh); });
+      refresh();
+    });
+    var retention = document.querySelector('[name="settings[history_issue_retention_weeks]"]');
+    if (retention && retention.form) retention.form.addEventListener('submit', function(event) {
+      if (Number(retention.value) < Number(retention.dataset.originalValue) &&
+          !window.confirm(<%= raw json_escape(l(:text_project_percent_done_history_retention_reduction_confirm).to_json) %>)) event.preventDefault();
+    });
+
+    var projectTypeField = document.getElementById('ppd-history-project-type-field');
+    var projectTypeValues = document.getElementById('ppd-history-project-type-values');
+    if (projectTypeField && projectTypeValues) {
+      var possibleValues = JSON.parse(projectTypeField.dataset.possibleValues || '{}');
+
+      function refreshProjectTypeValues(preserveSelection) {
+        var selected = preserveSelection ? Array.from(projectTypeValues.selectedOptions).map(function(option) {
+          return option.value;
+        }) : [];
+
+        projectTypeValues.replaceChildren();
+        (possibleValues[projectTypeField.value] || []).forEach(function(value) {
+          var option = document.createElement('option');
+          option.value = value;
+          option.textContent = value;
+          option.selected = selected.indexOf(value) !== -1;
+          projectTypeValues.appendChild(option);
+        });
+      }
+
+      projectTypeField.addEventListener('change', function() { refreshProjectTypeValues(false); });
+      refreshProjectTypeValues(true);
+    }
+
+    var historyToggle = document.querySelector('[data-ppd-toggle="history"]');
+    var historySections = document.querySelectorAll('[data-ppd-requires-history]');
+    if (historyToggle && historySections.length) {
+      function refreshHistorySections() {
+        historySections.forEach(function(section) {
+          section.hidden = !historyToggle.checked;
+        });
+      }
+
+      historyToggle.addEventListener('change', refreshHistorySections);
+      refreshHistorySections();
+    }
+
+    function fallbackCopy(text) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', 'readonly');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      var copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return copied;
+    }
+
+    function updateCopyStatus(button, success) {
+      var label = success ? button.dataset.copySuccess : button.dataset.copyError;
+      button.querySelector('span').textContent = label;
+      button.classList.toggle('ppd-copy-success', success);
+      window.setTimeout(function() {
+        button.querySelector('span').textContent = button.dataset.copyLabel;
+        button.classList.remove('ppd-copy-success');
+      }, 1800);
+    }
+
+    document.querySelectorAll('.ppd-copy-command').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var target = document.getElementById(button.dataset.copyTarget);
+        var text = target ? target.textContent.trim() : '';
+
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(
+            function() { updateCopyStatus(button, true); },
+            function() { updateCopyStatus(button, fallbackCopy(text)); }
+          );
+        } else {
+          updateCopyStatus(button, fallbackCopy(text));
+        }
+      });
+    });
+  })();
+</script>

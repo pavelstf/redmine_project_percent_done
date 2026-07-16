@@ -7,6 +7,11 @@ module ProjectPercentDoneHelper
     "#{result.percent_done}%"
   end
 
+  def project_percent_done_history_available?(project)
+    ProjectPercentDone::Settings.history_enabled? ||
+      ProjectPercentDoneSnapshot.where(:project_id => project.id).exists?
+  end
+
   def project_percent_done_visible_rows(rows)
     rows.select { |row| row.issue.visible? }
   end
@@ -42,5 +47,25 @@ module ProjectPercentDoneHelper
 
   def project_percent_done_breakdown_reason_label(reason)
     l(:"label_project_percent_done_reason_#{reason}")
+  end
+
+  def project_percent_done_history_change(entries, index, mode)
+    return nil if mode == 'hidden' || index.zero?
+    current = entries[index]
+    previous = entries[index - 1]
+    return nil unless current.active? && previous.active?
+
+    current_value = current.snapshot.display_percent_done.to_f
+    previous_value = previous.snapshot.display_percent_done.to_f
+    if mode == 'relative_percent'
+      return nil if previous_value.zero?
+      format('%+.1f%%', ((current_value - previous_value) / previous_value) * 100)
+    else
+      format('%+g pp', current_value - previous_value)
+    end
+  end
+
+  def project_percent_done_history_state_label(state)
+    l(:"label_project_percent_done_history_state_#{state}")
   end
 end

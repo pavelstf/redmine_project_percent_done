@@ -77,6 +77,17 @@ production-approved on 2026-07-15
 The user confirmed that version `1.1.1` is installed and working as expected
 on both GCR staging and GCR production.
 
+## GCR 1.2.0 Staging Package
+
+Version `1.2.0` adds optional persistent historical progress. It is packaged
+for staging validation only and is not staging-approved until user acceptance.
+
+Package, SHA-256, byte size, exact test evidence, and runbook are recorded in
+`docs/HANDOFF_1.2.0.md` after packaging.
+
+Use `docs/STAGING_RUNBOOK_1.2.0.md`. Full Redmine 6.1.2 suite result:
+`66 runs, 281 assertions, 0 failures, 0 errors, 0 skips`.
+
 ## GCR 1.1.0 Promotion Packages
 
 Staging-approved package:

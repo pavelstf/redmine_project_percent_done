@@ -36,9 +36,10 @@ rm -rf plugins/redmine_project_percent_done
 touch tmp/restart.txt
 ```
 
-Version 1.1.0 does not create database tables or run migrations, so rollback
-does not require database changes. To roll back an upgrade, restore the
-previous plugin directory from backup and restart Redmine.
+Version 1.2.0 creates plugin-owned history tables. For an ordinary rollback,
+restore the previous plugin directory and restart Redmine, but leave the tables
+in place so captured history is preserved. Restore the pre-deployment database
+backup only when a complete database rollback is explicitly required.
 
 ## Shared Hosting Notes
 
@@ -69,6 +70,9 @@ plugin assets after replacing the plugin directory:
 mkdir -p public/plugin_assets/redmine_project_percent_done/stylesheets
 cp -a plugins/redmine_project_percent_done/assets/stylesheets/. public/plugin_assets/redmine_project_percent_done/stylesheets/
 ```
+
+Version 1.2.0 extends the same stylesheet for the history graph and table; the
+guarded asset copy remains required on GCR shared hosting.
 
 ## GCR Production Promotion 1.1.0
 

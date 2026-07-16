@@ -1,0 +1,23 @@
+<%= l(:label_project_percent_done_history_email_report) %>
+
+<%= l(:label_project_percent_done_history_run_status) %>: <%= @run.status %>
+<%= l(:label_project_percent_done_history_started_at) %>: <%= @run.started_at %>
+<%= l(:label_project_percent_done_history_completed_at) %>: <%= @run.completed_at || '-' %>
+<%= l(:label_project_percent_done_history_snapshot_type) %>: <%= @run.snapshot_type.presence || 'operational' %>
+<%= l(:label_project_percent_done_history_period_end) %>: <%= @run.target_period_end || '-' %>
+<%= l(:label_project_percent_done_history_projects_processed) %>: <%= @run.projects_processed %>
+<%= l(:label_project_percent_done_history_projects_succeeded) %>: <%= @run.projects_succeeded %>
+<%= l(:label_project_percent_done_history_projects_failed) %>: <%= @run.projects_failed %>
+<%= l(:label_project_percent_done_history_snapshots_created) %>: <%= @run.snapshots_created %>
+<%= l(:label_project_percent_done_history_snapshots_promoted) %>: <%= @run.snapshots_promoted %>
+<%= l(:label_project_percent_done_history_issue_snapshots_created) %>: <%= @run.issue_snapshots_created %>
+<%= l(:label_project_percent_done_history_details_deleted) %>: <%= @run.details_deleted %>
+
+<% if @errors.any? %>
+<%= l(:label_project_percent_done_history_errors) %>:
+<% @errors.each do |error| %>
+- <%= error['project_name'].presence || error['project_id'].presence || l(:label_unknown) %>: <%= error['error_class'] %> - <%= l("text_project_percent_done_#{error['message']}", :default => error['message']) %>
+<% end %>
+<% end %>
+
+<%= l(:label_project_percent_done_history_diagnostics) %>: <%= @diagnostics_url %>

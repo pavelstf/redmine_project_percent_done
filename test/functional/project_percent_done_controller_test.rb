@@ -37,4 +37,70 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       )
     end
   end
+
+  def test_regular_user_can_view_aggregate_history_without_issue_snapshot_subjects
+    snapshot = ProjectPercentDoneSnapshot.create!(
+      :project => test_project, :snapshot_kind => 'official', :period_end => Date.new(2026, 7, 12),
+      :captured_at => Time.zone.local(2026, 7, 12, 23, 59), :project_state => 'active',
+      :display_percent_done => 50
+    )
+    ProjectPercentDoneIssueSnapshot.create!(
+      :snapshot => snapshot, :issue_id => 999_999, :subject => 'ADMIN-ONLY HISTORIC SUBJECT', :included => true
+    )
+    user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
+    @request.session[:user_id] = user.id
+
+    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+      get :history, :params => { :project_id => test_project.identifier }
+      assert_response :success
+      assert_includes @response.body, I18n.t(:label_project_percent_done_history)
+      refute_includes @response.body, 'ADMIN-ONLY HISTORIC SUBJECT'
+    end
+  end
+
+  def test_calculation_and_history_are_rendered_on_separate_pages
+    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+      get :show, :params => { :project_id => test_project.identifier }
+
+      assert_response :success
+      assert_equal :project_percent_done, @controller.current_menu_item
+      assert_includes @response.body, I18n.t(:label_project_percent_done_details)
+      assert_select "a[href=\"#{project_percent_done_history_path(:project_id => test_project.identifier)}\"]",
+                    :text => I18n.t(:label_project_percent_done_history_tab)
+      refute_includes @response.body, 'data-ppd-history'
+
+      get :history, :params => { :project_id => test_project.identifier }
+
+      assert_response :success
+      assert_equal :project_percent_done_history, @controller.current_menu_item
+      assert_select 'section[data-ppd-history]', :count => 1
+      assert_select "form.ppd-history-controls[action=\"#{project_percent_done_history_path(:project_id => test_project.identifier)}\"]"
+      assert_includes @response.body, I18n.t(:text_project_percent_done_history_no_official_snapshots)
+      assert_includes @response.body, I18n.t(:label_project_percent_done_history_chart_mode_control)
+      refute_includes @response.body, I18n.t(:label_project_percent_done_history_chart_mode)
+    end
+  end
+
+  def test_project_menu_items_use_project_visibility_permission
+    items = Redmine::MenuManager.items(:project_menu)
+    calculation_item = items.children.detect { |item| item.name == :project_percent_done }
+    history_item = items.children.detect { |item| item.name == :project_percent_done_history }
+    user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
+
+    assert_equal :view_project, calculation_item.permission
+    assert_equal :view_project, history_item.permission
+
+    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+      assert_nothing_raised { calculation_item.allowed?(user, test_project) }
+      assert_nothing_raised { history_item.allowed?(user, test_project) }
+    end
+  end
+
+  def test_history_page_is_not_available_without_enabled_collection_or_existing_history
+    with_project_percent_done_settings('history_enabled' => '0') do
+      get :history, :params => { :project_id => test_project.identifier }
+
+      assert_response 404
+    end
+  end
 end

@@ -15,7 +15,7 @@
    end %>
 
 <% content_for :header_tags do %>
-  <%= stylesheet_link_tag 'project_percent_done.css?v=1.1.1', plugin: 'redmine_project_percent_done' %>
+  <%= stylesheet_link_tag 'project_percent_done.css?v=1.2.0-r15', plugin: 'redmine_project_percent_done' %>
 <% end %>
 
 <fieldset class="box">
@@ -108,6 +108,9 @@
       ) %>
   </p>
 </fieldset>
+
+<%= render :partial => 'settings/project_percent_done_history_settings',
+           :locals => { :setting_help_button => setting_help_button } %>
 
 <p class="info"><%= l(:text_project_percent_done_absolute_progress_notice) %></p>
 
