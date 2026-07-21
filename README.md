@@ -289,6 +289,7 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 - [Calculation behavior](docs/CALCULATION.md)
 - [Public API V1](docs/PUBLIC_API_V1.md)
 - [Historical progress snapshots V1 specification](docs/HISTORICAL_PROGRESS_SNAPSHOTS_SPEC.md)
+- [Production runbook 1.2.0](docs/PRODUCTION_RUNBOOK_1.2.0.md)
 - [Deployment notes](docs/DEPLOYMENT.md)
 - [Release checklist](docs/RELEASE.md)
 - [Changelog](CHANGELOG.md)
