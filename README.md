@@ -20,6 +20,7 @@ The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redm
 - Optionally stores daily operational and official weekly progress snapshots.
 - Shows weekly history on a dedicated project tab as a gap-aware graph and paginated table.
 - Supports project-type scope, aggregate/detail retention, diagnostics, and email reports.
+- Can collect production history in shadow mode while hiding project history pages from users.
 - Tracks observed changes to optional project start and planned end custom dates.
 - Highlights pre-start and post-end time entries and provides guarded calendar-day forecasts.
 
@@ -132,6 +133,7 @@ Historical progress settings include:
 
 - master enable switch, disabled by default;
 - project-only or project-and-issue detail;
+- history visibility: hidden from project UI, administrators only, or visible according to project access;
 - single-value or multi-value list project type field and eligible values;
 - optional date custom fields for project start and planned end;
 - 0-3 day official-snapshot recovery tolerance;
@@ -155,6 +157,11 @@ and promotes the closest eligible capture to the official Sunday period:
 cd /path/to/redmine
 RAILS_ENV=production bundle exec rake redmine:project_percent_done:snapshots
 ```
+
+Configured notification email is sent according to the history email settings
+when the run creates, promotes, repairs, or records a reportable state. The rake
+task is independent from project history visibility, so production can start
+collecting data with history hidden from project users.
 
 Example cron entry for 00:05 server time:
 
@@ -218,9 +225,11 @@ The project percentage is calculated from all issues in the project, regardless 
 
 The details page shows issue rows only for issues visible to the current user. The final percentage and totals still represent the entire project and all applicable issues.
 
-Historical aggregate graph/table access follows current project visibility.
-Historical issue rows and irreversible per-project purge are restricted to
-Redmine system administrators.
+Historical aggregate graph/table access is controlled by the history visibility
+setting. The default is hidden from project UI, which allows production shadow
+collection. When enabled for users, access still follows current project
+visibility. Historical issue rows and irreversible per-project purge are
+restricted to Redmine system administrators.
 
 ## Performance
 

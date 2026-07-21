@@ -1,6 +1,6 @@
 # Historical Project Progress Snapshots - V1 Specification
 
-- Status: Product decisions approved; implementation not started
+- Status: Implemented for V1; staging validation in progress
 - Decision date: 2026-07-15
 - Target plugin: `redmine_project_percent_done`
 - Primary Redmine target: 6.1.2, with Redmine 5.x/6.x compatibility
@@ -23,6 +23,11 @@ The feature will:
 The feature is opt-in. An installation that does not enable it continues to use
 the existing live calculation and does not accumulate project or issue history.
 
+Collection and project-history visibility are separate controls. An
+administrator can enable collection in production while keeping the dedicated
+project history page hidden from all project users. Diagnostics, cron, retention
+and configured collection email still operate in this shadow mode.
+
 ## 2. V1 Scope
 
 ### Included
@@ -44,6 +49,7 @@ the existing live calculation and does not accumulate project or issue history.
 - Observed project-plan history from configurable start/end date custom fields,
   calendar-time analysis, time-entry boundary anomalies, and guarded forecasts.
 - Configurable operational email notifications.
+- Configurable project-history visibility, including production shadow collection.
 
 ### Deferred
 
@@ -411,6 +417,8 @@ explicit project identifier and dry-run mode.
 
 - Enable historical collection; default off.
 - Detail level: project only, or project plus issues; default project only.
+- History visibility: hidden, system administrators only, or visible according
+  to project access; default hidden.
 - Project type custom field.
 - Allowed project type values; at least one required when enabled.
 - Maximum operational promotion deviation: 0-3 days, default 2.
@@ -512,8 +520,13 @@ rationale.
 
 ### Access
 
-- Aggregate graph/table access follows the user's current access to the project
-  and the dedicated project history page.
+- Aggregate graph/table access first follows the global history visibility
+  setting. In `project access` mode it then follows the user's current access to
+  the project and the dedicated project history page.
+- In `hidden` mode, the project history tab/link and direct history URL are not
+  available to project users even while collection continues.
+- In `system administrators only` mode, only Redmine system administrators can
+  open aggregate project history.
 - Only Redmine system administrators can view or expand per-issue historical
   details.
 - Regular users never receive issue snapshot rows through HTML endpoints.
@@ -781,7 +794,8 @@ their real capture timestamp and deviation.
 ## 18. Security and Privacy
 
 - Only system administrators can view historical issue rows or purge history.
-- Aggregate project history follows current project-page access.
+- Aggregate project history is hidden by default and follows the configured
+  visibility mode before current project-page access is considered.
 - Server endpoints must enforce permissions; hiding UI controls is insufficient.
 - Stored issue subject/status text follows detail-retention deletion.
 - Project deletion removes all project-specific plugin history.
@@ -924,7 +938,8 @@ These are technical verification items, not unresolved product requirements:
 - System administrators can explicitly purge one project's full history.
 - Aggregate history is indefinite otherwise.
 - V1 UI is graph plus table; CSV and REST history are deferred.
-- Aggregate visibility follows project access; issue history is admin-only.
+- Aggregate visibility is configurable: hidden by default, administrators only,
+  or project access. Issue history is always admin-only.
 - Rolling periods, calendar quarters/years, and fiscal quarters/years are
   supported.
 - Fiscal years are named by start year and default to a January start.

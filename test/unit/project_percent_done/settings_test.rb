@@ -21,6 +21,8 @@ class ProjectPercentDone::SettingsTest < ActiveSupport::TestCase
     with_project_percent_done_settings({}) do
       refute ProjectPercentDone::Settings.history_enabled?
       assert_equal 'project_only', ProjectPercentDone::Settings.history_detail_level
+      assert_equal 'hidden', ProjectPercentDone::Settings.history_visibility
+      refute ProjectPercentDone::Settings.history_visible?
       assert_equal 2, ProjectPercentDone::Settings.history_promotion_tolerance_days
       assert_equal 52, ProjectPercentDone::Settings.history_issue_retention_weeks
       assert_equal 4, ProjectPercentDone::Settings.history_inactive_grace_weeks
@@ -46,6 +48,34 @@ class ProjectPercentDone::SettingsTest < ActiveSupport::TestCase
       assert_equal 52, ProjectPercentDone::Settings.history_issue_retention_weeks
       assert_equal 4, ProjectPercentDone::Settings.history_inactive_grace_weeks
       assert_equal 1, ProjectPercentDone::Settings.history_fiscal_year_start_month
+    end
+  end
+
+  def test_history_visibility_modes
+    admin = User.find(1)
+    user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
+
+    with_project_percent_done_settings('history_visibility' => 'hidden') do
+      assert_equal 'hidden', ProjectPercentDone::Settings.history_visibility
+      refute ProjectPercentDone::Settings.history_visible?(admin)
+      refute ProjectPercentDone::Settings.history_visible?(user)
+    end
+
+    with_project_percent_done_settings('history_visibility' => 'admins_only') do
+      assert_equal 'admins_only', ProjectPercentDone::Settings.history_visibility
+      assert ProjectPercentDone::Settings.history_visible?(admin)
+      refute ProjectPercentDone::Settings.history_visible?(user)
+    end
+
+    with_project_percent_done_settings('history_visibility' => 'project_access') do
+      assert_equal 'project_access', ProjectPercentDone::Settings.history_visibility
+      assert ProjectPercentDone::Settings.history_visible?(admin)
+      assert ProjectPercentDone::Settings.history_visible?(user)
+    end
+
+    with_project_percent_done_settings('history_visibility' => 'invalid') do
+      assert_equal 'hidden', ProjectPercentDone::Settings.history_visibility
+      refute ProjectPercentDone::Settings.history_visible?(admin)
     end
   end
 end

@@ -33,6 +33,14 @@
         [l(:label_project_percent_done_history_project_and_issues), 'project_and_issues']
       ], @settings['history_detail_level']) %></p>
 
+    <p><label><%= l(:label_project_percent_done_history_visibility) %></label>
+      <%= setting_help_button.call(:help_project_percent_done_history_visibility, :label_project_percent_done_history_visibility) %>
+      <%= select_tag 'settings[history_visibility]', options_for_select([
+        [l(:label_project_percent_done_history_visibility_hidden), 'hidden'],
+        [l(:label_project_percent_done_history_visibility_admins), 'admins_only'],
+        [l(:label_project_percent_done_history_visibility_project_access), 'project_access']
+      ], @settings['history_visibility']) %></p>
+
     <p><label><%= l(:label_project_percent_done_history_project_type_field) %></label>
       <%= setting_help_button.call(:help_project_percent_done_history_project_type_field, :label_project_percent_done_history_project_type_field) %>
       <%= select_tag 'settings[history_project_type_custom_field_id]',

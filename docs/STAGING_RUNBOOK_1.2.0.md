@@ -2,20 +2,22 @@
 
 ## Release State
 
-`staging-approved` on 2026-07-16 after successful installation and protected
-demo seeding. It is not production-approved.
+`r18` staging candidate prepared on 2026-07-21 after adding production shadow
+history visibility. It is not production-approved.
 
 ## Package
 
-- File: `redmine_project_percent_done-1.2.0-staging-20260716-r17.zip`
-- Local path: `C:\Codex Projects\Project Percent Done Plugin\redmine_project_percent_done-1.2.0-staging-20260716-r17.zip`
-- Upload to: `/home/gcrbgcaa/redminestaging/plugins/redmine_project_percent_done-1.2.0-staging-20260716-r17.zip`
-- Size: `195334` bytes
-- SHA-256: `4500639E28B49402982B4E256951B9BD09A88094DF2860FDFB1C4D3657ADA43F`
+- File: `redmine_project_percent_done-1.2.0-staging-20260721-r18.zip`
+- Local path: `C:\Codex Projects\Project Percent Done Plugin\redmine_project_percent_done-1.2.0-staging-20260721-r18.zip`
+- Upload to: `/home/gcrbgcaa/redminestaging/plugins/redmine_project_percent_done-1.2.0-staging-20260721-r18.zip`
+- Size: `213171` bytes
+- SHA-256: `C16800F8B9B5193F54C158CFD64711FD4FF171312DE7F7380138E97DD65947A5`
 - Required archive root: `redmine_project_percent_done/`
 
 Upload the ZIP through cPanel/File Manager before starting. Do not upload it
 inside the active plugin directory.
+This runbook and the handoff document are release-only files and are not
+embedded inside the ZIP, so the checksum above remains stable.
 
 ## 1. Session And Package Verification
 
@@ -26,8 +28,8 @@ set -u
 
 REDMINE_ROOT="/home/gcrbgcaa/redminestaging"
 PLUGIN_ID="redmine_project_percent_done"
-ZIP_FILE="redmine_project_percent_done-1.2.0-staging-20260716-r17.zip"
-EXPECTED_SHA="4500639E28B49402982B4E256951B9BD09A88094DF2860FDFB1C4D3657ADA43F"
+ZIP_FILE="redmine_project_percent_done-1.2.0-staging-20260721-r18.zip"
+EXPECTED_SHA="C16800F8B9B5193F54C158CFD64711FD4FF171312DE7F7380138E97DD65947A5"
 EXPECTED_VERSION="1.2.0"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
@@ -97,7 +99,7 @@ set -u
 
 REDMINE_ROOT="/home/gcrbgcaa/redminestaging"
 PLUGIN_ID="redmine_project_percent_done"
-ZIP_FILE="redmine_project_percent_done-1.2.0-staging-20260716-r17.zip"
+ZIP_FILE="redmine_project_percent_done-1.2.0-staging-20260721-r18.zip"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 WORK_DIR="plugins/.${PLUGIN_ID}-install-$STAMP"
 cd "$REDMINE_ROOT"
@@ -189,6 +191,7 @@ RAILS_ENV=production bundle exec rails runner '
   abort("missing tables: #{missing.join(", ")}") if missing.any?
   puts "plugin_version=#{plugin.version}"
   puts "history_enabled=#{ProjectPercentDone::Settings.history_enabled?}"
+  puts "history_visibility=#{ProjectPercentDone::Settings.history_visibility}"
   puts "tables=ok"
 '
 
@@ -196,8 +199,9 @@ DRY_RUN=1 RAILS_ENV=production bundle exec rake redmine:project_percent_done:cle
 tail -n 120 /home/gcrbgcaa/redminestaging/log/production.log
 ```
 
-Expected initial `history_enabled=false`. Existing live project percentage,
-REST, and Public API V1 behavior must remain unchanged.
+Expected initial `history_enabled=false` and `history_visibility=hidden`.
+Existing live project percentage, REST, and Public API V1 behavior must remain
+unchanged.
 
 ## 6. Configure And Preview
 
@@ -215,13 +219,18 @@ As a system administrator:
    two different fields; leaving either blank must not block collection.
 5. Keep detail level at `Project aggregates only` for the first staging run,
    unless issue-detail validation is explicitly required.
-6. Leave email disabled for the first data capture; configure and test it
+6. Keep `History visibility` at `Hidden from all users` for production shadow
+   validation. Switch it temporarily only when validating the project history UI.
+7. Leave email disabled for the first data capture; configure and test it
    separately afterward.
-7. Click **Preview scope** and confirm the project/issue estimate is plausible.
-8. Enable historical collection and save.
-9. Click **Create due snapshot now** once.
+8. Click **Preview scope** and confirm the project/issue estimate is plausible.
+9. Enable historical collection and save.
+10. Click **Create due snapshot now** once.
 
-Then inspect one eligible project's separate `Progress history` project tab. Confirm:
+With hidden visibility, first confirm that one eligible project's separate
+`Progress history` project tab/link and direct history URL are not available to
+project users while diagnostics show snapshot activity. Then temporarily switch
+visibility to `Visible according to project access` for UI validation and confirm:
 
 - graph and table show exact weekly values;
 - the live `Project Percent Done` calculation page no longer contains the history table;

@@ -20,8 +20,7 @@ module ProjectPercentDone
       return ''.html_safe unless controller && project
 
       result = cached_summary_result(controller, project)
-      history_available = ProjectPercentDone::Settings.history_enabled? ||
-                          ProjectPercentDoneSnapshot.where(:project_id => project.id).exists?
+      history_available = ProjectPercentDone::Settings.history_available_for_project?(project)
 
       controller.send(
         :render_to_string,

@@ -7,6 +7,7 @@ module ProjectPercentDone
         'unestimated_issue_mode' => %w[use_average_estimate use_weight_1 ignore equal_weight_all],
         'rounding_mode' => %w[nearest_integer floor ceil],
         'history_detail_level' => %w[project_only project_and_issues],
+        'history_visibility' => %w[hidden admins_only project_access],
         'history_chart_mode' => %w[percent_only extended],
         'history_default_period' => %w[13 26 52 104 current_quarter current_year all],
         'history_change_display' => %w[hidden percentage_points relative_percent],
@@ -29,6 +30,7 @@ module ProjectPercentDone
       'rounding_mode' => 'nearest_integer',
       'history_enabled' => '0',
       'history_detail_level' => 'project_only',
+      'history_visibility' => 'hidden',
       'history_project_type_custom_field_id' => '',
       'history_project_type_values' => [],
       'history_project_start_custom_field_id' => '',
@@ -123,6 +125,29 @@ module ProjectPercentDone
 
       def history_issue_details?
         history_detail_level == 'project_and_issues'
+      end
+
+      def history_visibility
+        normalized_value('history_visibility')
+      end
+
+      def history_visible?(user = nil)
+        case history_visibility
+        when 'project_access'
+          true
+        when 'admins_only'
+          user ||= User.current if defined?(User)
+          user.respond_to?(:admin?) && user.admin?
+        else
+          false
+        end
+      end
+
+      def history_available_for_project?(project, user = nil)
+        return false unless project && history_visible?(user)
+
+        history_enabled? ||
+          ProjectPercentDoneSnapshot.where(:project_id => project.id).exists?
       end
 
       def history_project_type_custom_field_id

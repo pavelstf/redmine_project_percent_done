@@ -6,14 +6,17 @@
 
 ## Deliverables
 
-- Package: `redmine_project_percent_done-1.2.0-staging-20260716-r17.zip`
-- Size: `195334` bytes
-- SHA-256: `4500639E28B49402982B4E256951B9BD09A88094DF2860FDFB1C4D3657ADA43F`
+- Package: `redmine_project_percent_done-1.2.0-staging-20260721-r18.zip`
+- Size: `213171` bytes
+- SHA-256: `C16800F8B9B5193F54C158CFD64711FD4FF171312DE7F7380138E97DD65947A5`
 - Archive root: `redmine_project_percent_done/`
 - Runbook: `docs/STAGING_RUNBOOK_1.2.0.md`
 - Specification: `docs/HISTORICAL_PROGRESS_SNAPSHOTS_SPEC.md`
 - Test evidence: `docs/TESTING_1.2.0.md`
 - Source branch: `codex/project-percent-done-history-v1`
+
+Release-only handoff and staging runbook files are not embedded in the ZIP so
+their package checksum metadata remains stable.
 
 ## Implemented V1
 
@@ -29,8 +32,9 @@
 - Dedicated progress-history project tab with a gap-aware graph, paginated
   table, rolling/calendar/fiscal periods, exact
   values, change modes, and browser-local preferences.
-- Aggregate access follows current project visibility; historical issue rows
-  and purge are system-administrator-only.
+- Aggregate access is now gated by configurable history visibility: hidden by
+  default for production shadow collection, administrators only, or project
+  access. Historical issue rows and purge are system-administrator-only.
 - Optional observed start/end custom dates, calendar plan phases, plan-change
   history, time-entry boundary anomalies, explicit pre-collection gaps, and
   guarded shadow forecasts.
@@ -59,6 +63,8 @@ CSV and history REST API remain deferred until the model is stable, as agreed.
 - The user confirmed successful `r17` installation and protected demo seeding
   on staging: 14 project snapshots, 66 issue snapshots, 15 collection runs,
   60% live progress, 200 estimated hours, and 132 reported hours.
+- New `r18` package adds production shadow visibility gating and is locally
+  verified by the full suite: 88 runs, 430 assertions, 0 failures.
 - Ruby, ERB, YAML, EN/BG placeholder parity, and whitespace checks passed.
 - ZIP root and embedded plugin version verified.
 - Local Redmine test server reached HTTP 200 and controller render tests cover
@@ -82,8 +88,8 @@ acceptance checklist rather than claimed as completed.
 
 ## Next Session
 
-- Decide whether to promote the exact staging-approved `r17` bytes to a
-  production package; do not rebuild the ZIP for that promotion.
+- Install and validate `r18` on staging. For production shadow collection, keep
+  history visibility set to hidden while enabling collection and cron.
 - Configure and observe the daily `5 0 * * *` cron in staging if it has not yet
   been added, including one real Sunday promotion and its digest email.
 - Keep CSV and history REST API deferred until the snapshot model has completed

@@ -38,8 +38,7 @@ Redmine::Plugin.register :redmine_project_percent_done do
     :param => :project_id,
     :permission => :view_project,
     :if => Proc.new do |project|
-      ProjectPercentDone::Settings.history_enabled? ||
-        (project && ProjectPercentDoneSnapshot.where(:project_id => project.id).exists?)
+      ProjectPercentDone::Settings.history_available_for_project?(project)
     end
   )
 end

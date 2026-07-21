@@ -47,8 +47,7 @@ class ProjectPercentDoneController < ApplicationController
   end
 
   def ensure_history_available
-    has_history = ProjectPercentDoneSnapshot.where(:project_id => @project.id).exists?
-    render_404 unless ProjectPercentDone::Settings.history_enabled? || has_history
+    render_404 unless ProjectPercentDone::Settings.history_available_for_project?(@project)
   end
 
   def api_payload

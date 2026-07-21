@@ -46,14 +46,19 @@ Bundler directly, loading each plugin test file in the declared Redmine runtime.
   aggregation for every active snapshot, cleanup, and idempotent reseeding. It
   also verifies migration from a normal `admin` run in the dedicated demo
   project and refusal when the protected project identity is changed.
+- Production shadow visibility gate: settings 4 runs, 34 assertions; project
+  controller 8 runs, 35 assertions; overview hook 1 run, 2 assertions. Coverage
+  verifies hidden default, invalid-value fallback, administrator-only visibility,
+  project-access visibility, direct history URL protection, and hook/menu link
+  suppression unless history display is explicitly allowed.
 
 ## Full Suite
 
 - Command strategy: all `test/**/*_test.rb` files loaded in one process with
   pinned Ruby and Bundler from the shared runtime.
-- Result: **85 runs, 414 assertions, 0 failures, 0 errors, 0 skips**.
-- Final seed: `42180`.
-- Final test execution time: 10.913922 seconds.
+- Result: **88 runs, 430 assertions, 0 failures, 0 errors, 0 skips**.
+- Final seed: `57184`.
+- Final test execution time: 13.089047 seconds.
 - Migration `001` was reverted and reapplied successfully against the shared
   test database before the focused and full green suites.
 

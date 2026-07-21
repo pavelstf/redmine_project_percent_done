@@ -11,7 +11,8 @@ class ProjectPercentDoneHooksTest < ActionController::TestCase
   def test_project_overview_hook_renders_history_link_without_plugin_helper_context
     with_project_percent_done_settings(
       'display_overview' => '1',
-      'history_enabled' => '1'
+      'history_enabled' => '1',
+      'history_visibility' => 'project_access'
     ) do
       get :show, :params => { :id => test_project.identifier }
 

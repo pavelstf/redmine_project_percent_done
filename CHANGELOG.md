@@ -39,6 +39,7 @@ The format follows the spirit of Keep a Changelog, and this project uses semanti
 - The recommended daily collection example now runs at 00:05 (`5 0 * * *`).
 - Reworked staging demo data into a coherent 60% project scenario: six phase-based issues, 200 estimated hours, 132 real time-entry hours, aligned plan dates, and project snapshots calculated from their issue-detail weights.
 - The staging demo generator now safely absorbs snapshots created for its dedicated private demo project by normal admin or cron runs, while retaining strict project-name and demo-issue ownership checks.
+- Historical collection visibility is now separate from collection enablement, with a default hidden mode for production shadow data collection, plus administrator-only and project-access display modes.
 
 ### Compatibility
 

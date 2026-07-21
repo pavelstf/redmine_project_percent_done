@@ -50,7 +50,11 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
     user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
     @request.session[:user_id] = user.id
 
-    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+    with_project_percent_done_settings(
+      'display_project_tab' => '1',
+      'history_enabled' => '1',
+      'history_visibility' => 'project_access'
+    ) do
       get :history, :params => { :project_id => test_project.identifier }
       assert_response :success
       assert_includes @response.body, I18n.t(:label_project_percent_done_history)
@@ -59,7 +63,11 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
   end
 
   def test_calculation_and_history_are_rendered_on_separate_pages
-    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+    with_project_percent_done_settings(
+      'display_project_tab' => '1',
+      'history_enabled' => '1',
+      'history_visibility' => 'project_access'
+    ) do
       get :show, :params => { :project_id => test_project.identifier }
 
       assert_response :success
@@ -90,16 +98,41 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
     assert_equal :view_project, calculation_item.permission
     assert_equal :view_project, history_item.permission
 
-    with_project_percent_done_settings('display_project_tab' => '1', 'history_enabled' => '1') do
+    with_project_percent_done_settings(
+      'display_project_tab' => '1',
+      'history_enabled' => '1',
+      'history_visibility' => 'project_access'
+    ) do
       assert_nothing_raised { calculation_item.allowed?(user, test_project) }
       assert_nothing_raised { history_item.allowed?(user, test_project) }
     end
   end
 
   def test_history_page_is_not_available_without_enabled_collection_or_existing_history
-    with_project_percent_done_settings('history_enabled' => '0') do
+    with_project_percent_done_settings('history_enabled' => '0', 'history_visibility' => 'project_access') do
       get :history, :params => { :project_id => test_project.identifier }
 
+      assert_response 404
+    end
+  end
+
+  def test_history_page_is_hidden_when_collection_runs_in_shadow_mode
+    with_project_percent_done_settings('history_enabled' => '1', 'history_visibility' => 'hidden') do
+      get :history, :params => { :project_id => test_project.identifier }
+
+      assert_response 404
+    end
+  end
+
+  def test_admin_only_history_visibility_allows_admin_but_not_regular_user
+    with_project_percent_done_settings('history_enabled' => '1', 'history_visibility' => 'admins_only') do
+      get :history, :params => { :project_id => test_project.identifier }
+      assert_response :success
+
+      user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
+      @request.session[:user_id] = user.id
+
+      get :history, :params => { :project_id => test_project.identifier }
       assert_response 404
     end
   end

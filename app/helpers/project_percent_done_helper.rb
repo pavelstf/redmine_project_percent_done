@@ -8,8 +8,7 @@ module ProjectPercentDoneHelper
   end
 
   def project_percent_done_history_available?(project)
-    ProjectPercentDone::Settings.history_enabled? ||
-      ProjectPercentDoneSnapshot.where(:project_id => project.id).exists?
+    ProjectPercentDone::Settings.history_available_for_project?(project)
   end
 
   def project_percent_done_visible_rows(rows)
