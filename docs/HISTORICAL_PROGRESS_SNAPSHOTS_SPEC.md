@@ -50,6 +50,10 @@ and configured collection email still operate in this shadow mode.
   calendar-time analysis, time-entry boundary anomalies, and guarded forecasts.
 - Configurable operational email notifications.
 - Configurable project-history visibility, including production shadow collection.
+- Versioned in-process historical Public API for official snapshots.
+- Monthly official snapshots for completed calendar months, created whenever
+  historical collection is enabled.
+- Derived quarterly, half-yearly, and yearly progress from monthly snapshots.
 
 ### Deferred
 
@@ -66,6 +70,12 @@ and configured collection email still operate in this shadow mode.
 A weekly period ends at the end of Sunday in the Redmine application time zone.
 The canonical period key is the Sunday `period_end` date.
 
+### Monthly period
+
+A monthly period ends on the last calendar day of a completed month in the
+Redmine application time zone. The canonical period key is the month-end
+`period_end` date, for example `2026-02-28` or `2028-02-29`.
+
 ### Operational snapshot
 
 A daily, short-lived snapshot used as a recovery candidate. At most one current
@@ -74,10 +84,14 @@ shown in normal project history unless it is promoted to an official snapshot.
 
 ### Official snapshot
 
-The retained project snapshot for a Sunday weekly period. It can be:
+The retained project snapshot for a weekly or monthly period. It can be:
 
 - captured normally near the end of the period; or
 - promoted from the nearest eligible operational snapshot after a missed run.
+
+Weekly and monthly official snapshots are separate period types. They may share
+the same `period_end`, for example when the last calendar day of a month is also
+Sunday.
 
 ### State-only record
 
@@ -148,7 +162,7 @@ only and never deletes previous history.
 The snapshot stores the project's current custom-field values so historic scope
 decisions remain explainable after configuration or project changes.
 
-## 6. Daily and Weekly Snapshot Lifecycle
+## 6. Daily, Weekly, and Monthly Snapshot Lifecycle
 
 ### Normal execution
 
@@ -168,6 +182,11 @@ The exact `captured_at` timestamp is always stored. The task:
 
 Each project is processed in its own transaction. One project failure must not
 roll back successful snapshots for other projects.
+
+The same daily collector lifecycle promotes due weekly and monthly official
+snapshots. Monthly snapshots are always enabled when historical collection is
+enabled; there is no separate setting. A due monthly snapshot represents the
+completed calendar month whose last day is the monthly `period_end`.
 
 ### Operational rotation
 
@@ -208,7 +227,8 @@ valid; all other periods remain visibly missing.
 
 ### Idempotency and concurrency
 
-- A project can have at most one official snapshot for a `period_end`.
+- A project can have at most one official snapshot for a `period_type` and
+  `period_end`.
 - A run can be repeated without duplicating official or operational data.
 - Existing successful project snapshots are not overwritten during retry.
 - A retry processes only missing or failed project results where possible.
@@ -272,7 +292,8 @@ One row per project capture or state marker, including:
 
 - project ID;
 - snapshot kind: operational or official;
-- weekly `period_end` for official snapshots;
+- period type: `weekly` or `monthly`;
+- `period_end` for official snapshots;
 - `captured_at`;
 - project state;
 - direct/promoted source and timing deviation;
@@ -300,6 +321,15 @@ Aggregate fields should include at least the current calculator output:
 
 These aggregates are stored even when the initial chart mode hides them. This
 supports future CSV and REST contracts without changing old rows.
+
+Existing installations that already have official weekly rows must migrate them
+to `period_type = weekly`. The snapshot uniqueness boundary must include period
+type, so a weekly and monthly official snapshot can coexist for the same project
+and `period_end`:
+
+```text
+project_id + period_type + period_end
+```
 
 ### Issue snapshot
 
@@ -351,6 +381,10 @@ They are deleted only when:
 
 They are not deleted when a project is closed, archived, made out of scope, or
 when history collection is disabled or reconfigured.
+
+This applies to both weekly and monthly aggregate snapshots. Monthly aggregate
+snapshots are retained indefinitely because they are the audit source for
+downstream bonus-cap calculations. Issue-detail retention remains separate.
 
 ### Issue-detail age retention
 
@@ -590,7 +624,152 @@ stored locally in the browser. Keys must include the current Redmine user ID to
 avoid leaking preferences between users sharing a browser profile. Server-side
 defaults apply when no local preference exists.
 
-## 13. Administration Diagnostics and Actions
+## 13. Historical Public API
+
+Project Percent Done exposes a versioned in-process historical Public API under
+the existing namespace:
+
+```ruby
+ProjectPercentDone::PublicApi::V1
+```
+
+This API is the supported integration boundary for other Redmine plugins.
+Consumers must not read `ProjectPercentDoneSnapshot`, issue snapshot models, or
+plugin tables directly, and must not recalculate project progress locally.
+
+### Public methods
+
+The historical API covers these use cases:
+
+```ruby
+ProjectPercentDone::PublicApi::V1.history_capabilities
+ProjectPercentDone::PublicApi::V1.latest_official_snapshot(project:, period_type: :monthly)
+ProjectPercentDone::PublicApi::V1.official_snapshot_for(project:, period_type:, period_end:)
+ProjectPercentDone::PublicApi::V1.official_snapshots_between(project:, period_type:, from:, to:)
+ProjectPercentDone::PublicApi::V1.progress_at(project:, date:, preferred_period_type: :monthly)
+```
+
+The exact Ruby class names of the returned value objects are implementation
+details, but the method names and result fields form a public contract once
+released.
+
+### History capabilities
+
+`history_capabilities` returns an immutable object with at least:
+
+- contract name and version;
+- plugin and algorithm version;
+- `history_supported`;
+- supported period types, including `weekly` and `monthly`;
+- default period type: `monthly`;
+- official snapshot support;
+- monthly snapshot support;
+- `progress_at` support;
+- calculation mode;
+- persistence mode: `snapshots`.
+
+Adding historical methods must not change the existing live
+`ProjectPercentDone::PublicApi::V1.calculate` contract. If the historical API
+contract needs independent evolution, add explicit history capability fields or
+a dedicated history contract version instead of silently changing live result
+semantics.
+
+### Historical snapshot result
+
+Historical API methods return immutable value objects with defensive `to_h`
+copies. A result includes at least:
+
+- project ID;
+- period type;
+- period end;
+- captured timestamp;
+- project state;
+- `progress_available`;
+- stable unavailable reason;
+- displayed and raw percent done;
+- estimate coverage;
+- warning codes;
+- source, timing, and deviation provenance;
+- algorithm and plugin version;
+- calculation settings used at capture time;
+- aggregate issue counts, weights, and estimate metrics stored on the snapshot.
+
+A valid `0%` snapshot has `progress_available = true`. Zero must never be used
+as a synonym for missing or unavailable progress.
+
+### Monthly official snapshots
+
+Monthly official snapshots are created automatically whenever historical
+collection is enabled. There is no separate setting for monthly collection.
+
+A monthly snapshot represents project progress observed for the end of a
+completed calendar month. It is not an average for the month. If exact
+month-end capture is missed, the collector uses the same nearest eligible
+operational candidate pattern as weekly snapshots, with the configured
+promotion tolerance and actual `captured_at`, timing, and deviation preserved.
+
+Monthly missing periods remain explicit and must not be fabricated from current
+live project data.
+
+### Derived periods
+
+Quarterly, half-yearly, and yearly historical values are derived from monthly
+snapshots, not stored as duplicate aggregate rows:
+
+```text
+Q1 2026 = monthly snapshot at 2026-03-31
+Q2 2026 = monthly snapshot at 2026-06-30
+H1 2026 = monthly snapshot at 2026-06-30
+H2 2026 = monthly snapshot at 2026-12-31
+Calendar year 2026 = monthly snapshot at 2026-12-31
+```
+
+Consumers that need progress delta compare boundary snapshots. Bonus cap logic
+primarily uses the absolute progress value at the cut-off date.
+
+### `progress_at` semantics
+
+For `preferred_period_type: :monthly`, the deterministic MVP rule is:
+
+```text
+period_end = date.end_of_month
+```
+
+- If that month has not completed as of execution time, return
+  `progress_available = false` and `unavailable_reason = period_not_completed`.
+- If the month has completed but no official monthly snapshot exists, return
+  `progress_available = false` and `unavailable_reason = snapshot_missing`.
+- If the snapshot exists but the stored progress is unavailable, return
+  `progress_available = false` with the snapshot's stable unavailable reason.
+- Do not fall back to weekly snapshots.
+- Do not fall back to live calculation.
+
+For an annual cut-off on `2026-12-31`, `progress_at` returns the official
+monthly snapshot whose `period_end` is `2026-12-31`, once December 2026 is
+complete and the snapshot exists.
+
+### Missing and unavailable reasons
+
+The API distinguishes at least:
+
+- `period_not_completed`;
+- `snapshot_missing`;
+- `history_disabled`;
+- `project_not_tracked`;
+- `project_closed`;
+- `project_archived`;
+- `project_out_of_scope`;
+- `collection_disabled`;
+- `progress_unavailable`;
+- `no_eligible_issues`;
+- `no_usable_weight`.
+
+Invalid arguments raise `ArgumentError`. Database/runtime errors may propagate.
+Missing or unavailable historical progress is represented as an immutable result
+object so downstream workflows can show stable reason codes and refuse
+finalization without exception control flow.
+
+## 14. Administration Diagnostics and Actions
 
 The settings page includes a diagnostic block with:
 
@@ -635,7 +814,7 @@ V1 administrative actions:
 - Displays row counts and irreversible warning.
 - Requires explicit confirmation.
 
-## 14. Email Notifications
+## 15. Email Notifications
 
 ### Recipient handling
 
@@ -721,7 +900,7 @@ The message includes:
 It must not include issue subjects/details, stack traces, secrets, or arbitrary
 exception text. Detailed technical errors remain in the Redmine log.
 
-## 15. Rake Tasks
+## 16. Rake Tasks
 
 Planned tasks:
 
@@ -749,7 +928,7 @@ Issue snapshots deleted after project closure: 8610
 Failures: 0
 ```
 
-## 16. Failure Semantics
+## 17. Failure Semantics
 
 ### Run status
 
@@ -778,7 +957,7 @@ The plugin does not reconstruct progress before activation or fabricate missed
 weekly values from current Redmine data. Promoted operational snapshots retain
 their real capture timestamp and deviation.
 
-## 17. Performance and Database Requirements
+## 18. Performance and Database Requirements
 
 - Use additive, rollback-safe plugin migrations.
 - Use portable column types and indexes for supported Redmine databases.
@@ -791,7 +970,7 @@ their real capture timestamp and deviation.
 - Keep large cleanup operations bounded and resumable.
 - Do not store runtime databases, logs, gems, or Redmine checkouts in this repo.
 
-## 18. Security and Privacy
+## 19. Security and Privacy
 
 - Only system administrators can view historical issue rows or purge history.
 - Aggregate project history is hidden by default and follows the configured
@@ -804,7 +983,7 @@ their real capture timestamp and deviation.
 - Subject templates are protected against header injection.
 - Future CSV/REST endpoints require a separate security review before release.
 
-## 19. Testing and Acceptance
+## 20. Testing and Acceptance
 
 Implementation is incomplete until focused and full Redmine plugin tests pass in
 the shared runtime declared by `.redmine-test.yml`.
@@ -883,28 +1062,38 @@ Required coverage includes:
 
 - existing live calculation unchanged when history is disabled;
 - existing overview/sidebar/tab behavior unchanged;
-- existing REST API and Public API V1 unchanged in V1;
+- existing REST API and live `PublicApi::V1.calculate` contract unchanged;
+- historical Public API methods returning immutable value objects;
+- weekly and monthly official snapshots coexisting for the same `period_end`;
+- monthly leap-year and month-end promotion behavior;
+- `progress_at` monthly cut-off behavior, including `period_not_completed`,
+  `snapshot_missing`, unavailable progress, and valid `0%`;
 - Redmine 5.x and 6.1.x compatibility where the shared test matrix permits;
 - migration up/down behavior reviewed without destructive ordinary rollback.
 
-## 20. Implementation Sequence
+## 21. Implementation Sequence
 
 Recommended increments:
 
-1. Add settings, validation, migrations, models, and provenance fields.
-2. Implement daily collector, weekly promotion, locking, and run diagnostics.
-3. Implement retention, project deletion cleanup, dry-run, and manual purge.
-4. Implement admin health block, preview, manual due capture, and test email.
-5. Implement notification resolver, subject renderer, mailer, and recovery rules.
-6. Implement aggregate graph/table and browser-local preferences.
-7. Implement administrator-only issue detail expansion.
-8. Complete tests, performance checks, migration validation, documentation, and
+1. Add migrations, models, and provenance fields, including `period_type`.
+2. Backfill existing official rows to `weekly` and adjust uniqueness to
+   `project_id + period_type + period_end`.
+3. Implement daily collector weekly/monthly promotion, locking, and run
+   diagnostics without changing current weekly UI behavior.
+4. Implement historical Public API capabilities, snapshot results, lookup
+   methods, and `progress_at`.
+5. Implement retention, project deletion cleanup, dry-run, and manual purge.
+6. Implement admin health block, preview, manual due capture, and test email.
+7. Implement notification resolver, subject renderer, mailer, and recovery rules.
+8. Implement aggregate graph/table and browser-local preferences.
+9. Implement administrator-only issue detail expansion.
+10. Complete tests, performance checks, migration validation, documentation, and
    staging acceptance.
 
 Each increment should preserve the existing live behavior and be testable before
 the next surface is added.
 
-## 21. Implementation-Time Verification Items
+## 22. Implementation-Time Verification Items
 
 These are technical verification items, not unresolved product requirements:
 
@@ -918,10 +1107,16 @@ These are technical verification items, not unresolved product requirements:
 - confirm whether captured issue subject/status text requires any customer-
   specific privacy restriction before production enablement.
 
-## 22. Approved Product Decisions Summary
+## 23. Approved Product Decisions Summary
 
 - History is optional and disabled by default.
 - Daily operational snapshots rotate; official Sunday snapshots persist.
+- Official monthly snapshots are created for completed calendar months whenever
+  historical collection is enabled.
+- Monthly aggregate snapshots are retained indefinitely.
+- Quarterly, half-yearly, and yearly values are derived from monthly snapshots.
+- `progress_at` with monthly preference never falls back to weekly or live
+  calculation.
 - Missed Sunday snapshots use the nearest valid operational candidate.
 - Promotion tolerance is 0-3 days, default 2; ties prefer the earlier snapshot.
 - Weekly gaps that cannot be recovered remain explicitly missing.
@@ -952,7 +1147,7 @@ These are technical verification items, not unresolved product requirements:
   notification level.
 - Preview and manual due capture are included in V1.
 
-## 23. Observed Plan Dates, Time Boundaries, and Forecast Inputs
+## 24. Observed Plan Dates, Time Boundaries, and Forecast Inputs
 
 ### Purpose and terminology
 
