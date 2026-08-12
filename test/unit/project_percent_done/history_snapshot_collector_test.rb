@@ -15,6 +15,7 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
       result = collect_at(2026, 7, 13, 0, 15)
       snapshot = ProjectPercentDoneSnapshot.official.find_by!(
         :project_id => test_project.id,
+        :period_type => 'weekly',
         :period_end => Date.new(2026, 7, 12)
       )
 
@@ -36,7 +37,7 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
 
       collect_at(2026, 7, 15, 0, 15)
 
-      assert_equal 1, ProjectPercentDoneSnapshot.official.where(:project_id => test_project.id).count
+      assert_equal 1, ProjectPercentDoneSnapshot.weekly_official.where(:project_id => test_project.id).count
       assert_equal 1, ProjectPercentDoneSnapshot.operational.where(:project_id => test_project.id).count
       refute ProjectPercentDoneSnapshot.exists?(first_operational.id)
     end
@@ -50,6 +51,7 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
       collect_at(2026, 7, 14, 0, 15)
       official = ProjectPercentDoneSnapshot.official.find_by!(
         :project_id => test_project.id,
+        :period_type => 'weekly',
         :period_end => Date.new(2026, 7, 12)
       )
 
@@ -80,8 +82,45 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
     with_history_settings('history_promotion_tolerance_days' => '0') do
       collect_at(2026, 7, 14, 0, 15)
 
-      assert_equal 0, ProjectPercentDoneSnapshot.official.where(:project_id => test_project.id).count
+      assert_equal 0, ProjectPercentDoneSnapshot.weekly_official.where(:project_id => test_project.id).count
       assert_equal 1, ProjectPercentDoneSnapshot.operational.where(:project_id => test_project.id).count
+    end
+  end
+
+  def test_first_day_of_month_creates_due_monthly_official_snapshot
+    with_history_settings do
+      result = collect_at(2026, 8, 1, 0, 15)
+      snapshot = ProjectPercentDoneSnapshot.monthly_official.find_by!(
+        :project_id => test_project.id,
+        :period_end => Date.new(2026, 7, 31)
+      )
+
+      assert_equal 'successful', result.run.status
+      assert_equal 'monthly', snapshot.period_type
+      assert_equal 'direct', snapshot.snapshot_source
+      assert_equal 1, result.run.snapshots_promoted
+    end
+  end
+
+  def test_weekly_and_monthly_official_snapshots_can_share_period_end
+    with_history_settings do
+      result = collect_at(2026, 6, 1, 0, 15)
+
+      weekly = ProjectPercentDoneSnapshot.weekly_official.find_by!(
+        :project_id => test_project.id,
+        :period_end => Date.new(2026, 5, 31)
+      )
+      monthly = ProjectPercentDoneSnapshot.monthly_official.find_by!(
+        :project_id => test_project.id,
+        :period_end => Date.new(2026, 5, 31)
+      )
+
+      refute_equal weekly.id, monthly.id
+      assert_equal weekly.captured_at, monthly.captured_at
+      assert_equal 1, weekly.issue_snapshots.count
+      assert_equal 1, monthly.issue_snapshots.count
+      assert_equal 2, result.run.snapshots_promoted
+      assert_equal 2, result.run.issue_snapshots_created
     end
   end
 

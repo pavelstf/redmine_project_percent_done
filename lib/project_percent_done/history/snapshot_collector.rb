@@ -2,6 +2,11 @@ module ProjectPercentDone
   module History
     class SnapshotCollector
       Result = Struct.new(:run, :preview, keyword_init: true)
+      Period = Struct.new(:type, :end_date, keyword_init: true) do
+        def boundary
+          Time.zone.local(end_date.year, end_date.month, end_date.day, 23, 59, 59)
+        end
+      end
 
       attr_reader :now, :source, :preview
 
@@ -18,7 +23,7 @@ module ProjectPercentDone
           run = ProjectPercentDoneCollectionRun.create!(
             :source => source,
             :status => 'running',
-            :target_period_end => completed_period_end,
+            :target_period_end => completed_weekly_period_end,
             :started_at => now,
             :errors_list => []
           )
@@ -42,7 +47,7 @@ module ProjectPercentDone
         end
 
         previous_run = ProjectPercentDoneCollectionRun
-                       .where(:target_period_end => completed_period_end)
+                       .where(:target_period_end => completed_weekly_period_end)
                        .where.not(:id => run.id)
                        .latest_first
                        .first
@@ -93,14 +98,15 @@ module ProjectPercentDone
         snapshot = nil
         issue_count = 0
 
-        promoted = false
+        promoted = 0
+        promoted_issue_count = 0
         ProjectPercentDoneSnapshot.transaction do
           snapshot = create_snapshot(project, values, state, result, run)
           issue_count = create_issue_snapshots(snapshot, result)
-          promoted = officialize_if_due(project, snapshot, run)
+          promoted, promoted_issue_count = officialize_if_due(project, snapshot, run)
           rotate_operational(project, snapshot)
         end
-        [1, promoted ? 1 : 0, issue_count]
+        [1, promoted, issue_count + promoted_issue_count]
       end
 
       def project_state(project, in_scope)
@@ -130,6 +136,7 @@ module ProjectPercentDone
           :project => project,
           :collection_run => run,
           :snapshot_kind => 'operational',
+          :period_type => 'weekly',
           :captured_at => now,
           :project_state => state,
           :snapshot_source => 'direct',
@@ -194,32 +201,49 @@ module ProjectPercentDone
       end
 
       def officialize_if_due(project, current_snapshot, run)
-        return false if ProjectPercentDoneSnapshot.official.exists?(
+        due_periods.each_with_object([0, 0]) do |period, totals|
+          promoted, copied_issue_count = officialize_period_if_due(project, current_snapshot, run, period)
+          totals[0] += 1 if promoted
+          totals[1] += copied_issue_count
+        end
+      end
+
+      def officialize_period_if_due(project, current_snapshot, run, period)
+        return [false, 0] if ProjectPercentDoneSnapshot.official.exists?(
           :project_id => project.id,
-          :period_end => completed_period_end
+          :period_type => period.type,
+          :period_end => period.end_date
         )
 
         tolerance = ProjectPercentDone::Settings.history_promotion_tolerance_days.days
+        window = (period.boundary - tolerance)..(period.boundary + tolerance)
         candidates = ProjectPercentDoneSnapshot.operational
                                                .where(:project_id => project.id)
-                                               .where(:captured_at => (target_boundary - tolerance)..(target_boundary + tolerance))
+                                               .where(:captured_at => window)
                                                .to_a
+        reloaded_current = current_snapshot.reload
+        candidates << reloaded_current if reloaded_current.captured_at.between?(window.begin, window.end)
+        candidates.uniq!(&:id)
         candidate = candidates.min_by do |snapshot|
-          [(snapshot.captured_at - target_boundary).abs, snapshot.captured_at > target_boundary ? 1 : 0]
+          [(snapshot.captured_at - period.boundary).abs, snapshot.captured_at > period.boundary ? 1 : 0]
         end
-        return false unless candidate
+        return [false, 0] unless candidate
 
-        deviation = (candidate.captured_at - target_boundary).to_i
-        direct = candidate.id == current_snapshot.id && candidate.captured_at.to_date == completed_period_end + 1.day
-        candidate.update!(
+        deviation = (candidate.captured_at - period.boundary).to_i
+        direct = candidate.id == current_snapshot.id && candidate.captured_at.to_date == period.end_date + 1.day
+        official = candidate.operational? ? candidate : duplicate_snapshot(candidate)
+        official.collection_run = candidate.collection_run
+        official.update!(
           :snapshot_kind => 'official',
-          :period_end => completed_period_end,
+          :period_type => period.type,
+          :period_end => period.end_date,
           :officialized_by_run => run,
           :snapshot_source => direct ? 'direct' : 'promoted',
           :timing => direct ? 'on_time' : (deviation.negative? ? 'early' : 'late'),
           :deviation_seconds => deviation.abs
         )
-        true
+        copied_issue_count = official.id == candidate.id ? 0 : copy_issue_snapshots(candidate, official)
+        [true, copied_issue_count]
       end
 
       def rotate_operational(project, current_snapshot)
@@ -229,20 +253,41 @@ module ProjectPercentDone
         scope.find_each(&:destroy!)
       end
 
-      def completed_period_end
-        @completed_period_end ||= begin
+      def due_periods
+        @due_periods ||= begin
+          periods = [Period.new(:type => 'weekly', :end_date => completed_weekly_period_end)]
+          periods << Period.new(:type => 'monthly', :end_date => completed_monthly_period_end)
+          periods.uniq { |period| [period.type, period.end_date] }
+        end
+      end
+
+      def completed_weekly_period_end
+        @completed_weekly_period_end ||= begin
           date = now.to_date
           date - (date.wday.zero? ? 7 : date.wday)
         end
       end
 
-      def target_boundary
-        @target_boundary ||= Time.zone.local(
-          completed_period_end.year,
-          completed_period_end.month,
-          completed_period_end.day,
-          23, 59, 59
-        )
+      def completed_monthly_period_end
+        @completed_monthly_period_end ||= now.to_date.beginning_of_month - 1.day
+      end
+
+      def duplicate_snapshot(snapshot)
+        copy = snapshot.dup
+        copy.officialized_by_run = nil
+        copy.period_end = nil
+        copy
+      end
+
+      def copy_issue_snapshots(source, target)
+        count = 0
+        source.issue_snapshots.find_each do |issue_snapshot|
+          copy = issue_snapshot.dup
+          copy.snapshot = target
+          copy.save!
+          count += 1
+        end
+        count
       end
 
       def preview_result

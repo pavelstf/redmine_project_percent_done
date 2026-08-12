@@ -14,10 +14,15 @@ class ProjectPercentDoneSnapshot < ActiveRecord::Base
 
   scope :official, lambda { where(:snapshot_kind => 'official') }
   scope :operational, lambda { where(:snapshot_kind => 'operational') }
+  scope :weekly, lambda { where(:period_type => 'weekly') }
+  scope :monthly, lambda { where(:period_type => 'monthly') }
+  scope :weekly_official, lambda { official.weekly }
+  scope :monthly_official, lambda { official.monthly }
   scope :latest_first, lambda { order(:period_end => :desc, :captured_at => :desc) }
 
-  validates :project_id, :snapshot_kind, :captured_at, :project_state, :presence => true
+  validates :project_id, :snapshot_kind, :period_type, :captured_at, :project_state, :presence => true
   validates :snapshot_kind, :inclusion => { :in => %w[official operational] }
+  validates :period_type, :inclusion => { :in => %w[weekly monthly] }
   validates :project_state,
             :inclusion => { :in => %w[active closed archived out_of_scope] }
   validates :plan_phase,
@@ -36,6 +41,14 @@ class ProjectPercentDoneSnapshot < ActiveRecord::Base
 
   def operational?
     snapshot_kind == 'operational'
+  end
+
+  def weekly?
+    period_type == 'weekly'
+  end
+
+  def monthly?
+    period_type == 'monthly'
   end
 
   def active?

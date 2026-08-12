@@ -4,6 +4,42 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.0] - 2026-08-12
+
+### Added
+
+- Monthly official project progress snapshots are now captured automatically
+  whenever historical collection is enabled.
+- Weekly and monthly official snapshots can coexist for the same `period_end`
+  by using the new snapshot `period_type`.
+- Historical in-process Public API methods under
+  `ProjectPercentDone::PublicApi::V1`:
+  - `history_capabilities`
+  - `latest_official_snapshot`
+  - `official_snapshot_for`
+  - `official_snapshots_between`
+  - `progress_at`
+- Immutable historical API result objects with explicit unavailable reasons,
+  including `period_not_completed` and `snapshot_missing`.
+- Tests for monthly promotion, weekly/monthly coexistence, weekly UI isolation,
+  forecast isolation, valid historical `0%`, and no weekly/live fallback.
+
+### Changed
+
+- Existing weekly history UI, timeline options, plan-change comparisons, and
+  forecast calculations explicitly use weekly official snapshots only.
+- Public API documentation now covers both live calculation and historical
+  snapshot contracts.
+
+### Compatibility
+
+- Existing live calculation, REST response, and
+  `ProjectPercentDone::PublicApi::V1.calculate` remain unchanged.
+- Existing official history rows are migrated to `period_type = weekly`.
+- Adds migration `002` to extend the plugin-owned snapshot table and uniqueness
+  boundary.
+- CSV and REST history exports remain deferred.
+
 ## [1.2.0] - 2026-07-16
 
 ### Added

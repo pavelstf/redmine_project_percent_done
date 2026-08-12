@@ -58,7 +58,7 @@ module ProjectPercentDone
       end
 
       def previous_official_snapshot
-        ProjectPercentDoneSnapshot.official
+        ProjectPercentDoneSnapshot.weekly_official
                                   .where(:project_id => project.id)
                                   .order(:period_end => :desc, :id => :desc)
                                   .first

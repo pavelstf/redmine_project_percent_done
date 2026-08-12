@@ -61,7 +61,7 @@ module ProjectPercentDone
       end
 
       def current_inactive_since(project_id)
-        states = ProjectPercentDoneSnapshot.official
+        states = ProjectPercentDoneSnapshot.weekly_official
                                            .where(:project_id => project_id)
                                            .order(:period_end => :desc)
                                            .pluck(:period_end, :project_state)

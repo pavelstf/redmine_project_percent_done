@@ -11,7 +11,7 @@
 <% history_validation = ProjectPercentDone::History::SettingsValidator.new.call %>
 <% last_run = ProjectPercentDoneCollectionRun.latest_first.first %>
 <% last_success = ProjectPercentDoneCollectionRun.where(:status => %w[successful recovery]).latest_first.first %>
-<% last_official = ProjectPercentDoneSnapshot.official.maximum(:period_end) %>
+<% last_official = ProjectPercentDoneSnapshot.weekly_official.maximum(:period_end) %>
 <% cron_command = ProjectPercentDone::History::CronCommand.new %>
 
 <fieldset class="box ppd-history-settings" data-ppd-dependent-settings>

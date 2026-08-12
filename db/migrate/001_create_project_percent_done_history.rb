@@ -32,6 +32,7 @@ class CreateProjectPercentDoneHistory < ActiveRecord::Migration[6.1]
       t.integer :collection_run_id
       t.integer :officialized_by_run_id
       t.string :snapshot_kind, :null => false
+      t.string :period_type, :null => false, :default => 'weekly'
       t.date :period_end
       t.datetime :captured_at, :null => false
       t.string :project_state, :null => false
@@ -93,7 +94,7 @@ class CreateProjectPercentDoneHistory < ActiveRecord::Migration[6.1]
       t.timestamps :null => false
     end
 
-    add_index :project_percent_done_snapshots, [:project_id, :period_end],
+    add_index :project_percent_done_snapshots, [:project_id, :period_type, :period_end],
               :unique => true, :name => 'idx_ppd_snapshots_project_period'
     add_index :project_percent_done_snapshots, [:project_id, :snapshot_kind, :captured_at],
               :name => 'idx_ppd_snapshots_project_kind_time'

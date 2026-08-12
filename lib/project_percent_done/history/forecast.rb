@@ -21,7 +21,7 @@ module ProjectPercentDone
       end
 
       def call
-        snapshots = ProjectPercentDoneSnapshot.official
+        snapshots = ProjectPercentDoneSnapshot.weekly_official
                                               .where(:project_id => project.id)
                                               .order(:period_end => :asc)
                                               .to_a

@@ -1,5 +1,7 @@
 require_relative 'v1/capabilities'
 require_relative 'v1/result'
+require_relative 'v1/history_capabilities'
+require_relative 'v1/history_snapshot_result'
 
 module ProjectPercentDone
   module PublicApi
@@ -54,6 +56,62 @@ module ProjectPercentDone
           )
         end
 
+        def history_capabilities
+          HistoryCapabilities.new(
+            :contract_name => CONTRACT_NAME,
+            :contract_version => CONTRACT_VERSION,
+            :history_contract_version => '1.0',
+            :plugin_version => ProjectPercentDone::PLUGIN_VERSION,
+            :algorithm_version => ProjectPercentDone::ALGORITHM_VERSION,
+            :history_supported => true,
+            :history_enabled => ProjectPercentDone::Settings.history_enabled?,
+            :supported_period_types => %i[weekly monthly],
+            :default_period_type => :monthly,
+            :supports_official_snapshots => true,
+            :supports_monthly_snapshots => true,
+            :supports_progress_at => true,
+            :calculation_mode => 'snapshot',
+            :persistence_mode => 'snapshots'
+          )
+        end
+
+        def latest_official_snapshot(project:, period_type: :monthly)
+          validate_project!(project)
+          type = normalize_period_type!(period_type)
+          snapshot = official_scope(project, type).latest_first.first
+          snapshot ? HistorySnapshotResult.from_snapshot(snapshot) : unavailable_history_result(project, type, nil, :snapshot_missing)
+        end
+
+        def official_snapshot_for(project:, period_type:, period_end:)
+          validate_project!(project)
+          type = normalize_period_type!(period_type)
+          date = normalize_date!(period_end, 'period_end')
+          snapshot = official_scope(project, type).find_by(:period_end => date)
+          snapshot ? HistorySnapshotResult.from_snapshot(snapshot) : unavailable_history_result(project, type, date, :snapshot_missing)
+        end
+
+        def official_snapshots_between(project:, period_type:, from:, to:)
+          validate_project!(project)
+          type = normalize_period_type!(period_type)
+          from_date = normalize_date!(from, 'from')
+          to_date = normalize_date!(to, 'to')
+          raise ArgumentError, 'from must be on or before to' if from_date > to_date
+
+          official_scope(project, type)
+            .where(:period_end => from_date..to_date)
+            .order(:period_end => :asc, :id => :asc)
+            .map { |snapshot| HistorySnapshotResult.from_snapshot(snapshot) }
+        end
+
+        def progress_at(project:, date:, preferred_period_type: :monthly)
+          validate_project!(project)
+          type = normalize_period_type!(preferred_period_type)
+          target_date = normalize_date!(date, 'date')
+          return monthly_progress_at(project, target_date) if type == 'monthly'
+
+          official_snapshot_for(:project => project, :period_type => type, :period_end => target_date)
+        end
+
         private
 
         def validate_project!(project)
@@ -87,6 +145,43 @@ module ProjectPercentDone
           warnings << :all_issues_unestimated if calculation.eligible_issue_count.positive? && calculation.estimated_eligible_issue_count.zero?
           warnings << :no_usable_weight if calculation.eligible_issue_count.positive? && !calculation.total_weight.positive?
           warnings
+        end
+
+        def normalize_period_type!(period_type)
+          value = period_type.to_s
+          raise ArgumentError, 'period_type must be weekly or monthly' unless %w[weekly monthly].include?(value)
+
+          value
+        end
+
+        def normalize_date!(value, name)
+          return value if value.is_a?(Date)
+          return value.to_date if value.respond_to?(:to_date)
+
+          Date.iso8601(value.to_s)
+        rescue ArgumentError
+          raise ArgumentError, "#{name} must be a date"
+        end
+
+        def official_scope(project, period_type)
+          ProjectPercentDoneSnapshot.official
+                                    .where(:project_id => project.id, :period_type => period_type)
+        end
+
+        def monthly_progress_at(project, date)
+          period_end = date.end_of_month
+          return unavailable_history_result(project, 'monthly', period_end, :period_not_completed) if Time.zone.today <= period_end
+
+          official_snapshot_for(:project => project, :period_type => 'monthly', :period_end => period_end)
+        end
+
+        def unavailable_history_result(project, period_type, period_end, reason)
+          HistorySnapshotResult.unavailable(
+            :project_id => project.id,
+            :period_type => period_type,
+            :period_end => period_end,
+            :unavailable_reason => reason
+          )
         end
       end
     end

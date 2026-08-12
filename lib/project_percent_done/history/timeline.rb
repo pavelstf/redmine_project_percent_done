@@ -18,8 +18,8 @@ module ProjectPercentDone
       def entries
         return [] unless bounds
 
-        snapshots = ProjectPercentDoneSnapshot.official.where(:project_id => project.id, :period_end => bounds).index_by(&:period_end)
-        first_snapshot = ProjectPercentDoneSnapshot.official.where(:project_id => project.id).order(:period_end => :asc).first
+        snapshots = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id, :period_end => bounds).index_by(&:period_end)
+        first_snapshot = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).order(:period_end => :asc).first
         observed_start = first_snapshot.try(:project_start_date) || current_project_start_date
         runs = ProjectPercentDoneCollectionRun.where(:target_period_end => bounds).latest_first.group_by(&:target_period_end)
         sundays(bounds.begin, bounds.end).map do |date|
@@ -72,7 +72,7 @@ module ProjectPercentDone
             weeks = selected.to_i
             (last_sunday - (weeks - 1).weeks)..last_sunday
           when 'all'
-            minimum = ProjectPercentDoneSnapshot.official.where(:project_id => project.id).minimum(:period_end)
+            minimum = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).minimum(:period_end)
             minimum ? minimum..last_sunday : nil
           when 'current_quarter'
             current_named_bounds('quarter')
@@ -119,13 +119,13 @@ module ProjectPercentDone
       end
 
       def available_years
-        years = ProjectPercentDoneSnapshot.official.where(:project_id => project.id).pluck(:period_end).compact.map(&:year)
+        years = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).pluck(:period_end).compact.map(&:year)
         (years + [today.year]).uniq.sort.reverse
       end
 
       def available_fiscal_years
         month = ProjectPercentDone::Settings.history_fiscal_year_start_month
-        ProjectPercentDoneSnapshot.official.where(:project_id => project.id).pluck(:period_end).compact.map do |date|
+        ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).pluck(:period_end).compact.map do |date|
           date.month < month ? date.year - 1 : date.year
         end.push(today.month < month ? today.year - 1 : today.year).uniq.sort.reverse
       end

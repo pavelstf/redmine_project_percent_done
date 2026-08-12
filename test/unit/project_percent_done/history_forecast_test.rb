@@ -34,12 +34,23 @@ class ProjectPercentDone::History::ForecastTest < ActiveSupport::TestCase
     assert_equal 'project_not_started', result.reason
   end
 
+  def test_monthly_snapshots_do_not_feed_weekly_forecast
+    4.times do |index|
+      create_snapshot(Date.new(2026, 6, 7) + index.weeks, 10 + index * 10, :period_type => 'monthly')
+    end
+
+    result = ProjectPercentDone::History::Forecast.new(test_project).call
+    refute result.available?
+    assert_equal 'no_history', result.reason
+  end
+
   private
 
-  def create_snapshot(period_end, percent, start_date: Date.new(2026, 5, 1))
+  def create_snapshot(period_end, percent, start_date: Date.new(2026, 5, 1), period_type: 'weekly')
     ProjectPercentDoneSnapshot.create!(
       :project => test_project,
       :snapshot_kind => 'official',
+      :period_type => period_type,
       :period_end => period_end,
       :captured_at => Time.zone.local(period_end.year, period_end.month, period_end.day, 23, 59),
       :project_state => 'active',

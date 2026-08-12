@@ -54,11 +54,19 @@ class ProjectPercentDone::History::TimelineTest < ActiveSupport::TestCase
     assert_equal 'disabled', entries[Date.new(2026, 6, 28)].state
   end
 
+  def test_timeline_ignores_monthly_snapshots
+    create_snapshot(Date.new(2026, 6, 28), 'active', 40, :period_type => 'monthly')
+    timeline = ProjectPercentDone::History::Timeline.new(test_project, :selection => '13', :today => Date.new(2026, 7, 12))
+    entries = timeline.entries.index_by(&:period_end)
+
+    assert_equal 'not_observed', entries[Date.new(2026, 6, 28)].state
+  end
+
   private
 
-  def create_snapshot(period_end, state, percent)
+  def create_snapshot(period_end, state, percent, period_type: 'weekly')
     ProjectPercentDoneSnapshot.create!(
-      :project => test_project, :snapshot_kind => 'official', :period_end => period_end,
+      :project => test_project, :snapshot_kind => 'official', :period_type => period_type, :period_end => period_end,
       :captured_at => Time.zone.local(period_end.year, period_end.month, period_end.day, 23, 59),
       :project_state => state, :display_percent_done => percent
     )

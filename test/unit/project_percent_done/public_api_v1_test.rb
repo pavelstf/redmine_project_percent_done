@@ -13,7 +13,7 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
 
       assert_equal 'project_percent_done', capabilities.contract_name
       assert_equal '1.0', capabilities.contract_version
-      assert_equal '1.2.0', capabilities.plugin_version
+      assert_equal '1.3.0', capabilities.plugin_version
       assert_equal '1.0', capabilities.algorithm_version
       assert_equal 'live', capabilities.calculation_mode
       assert_equal 'none', capabilities.persistence_mode
@@ -166,5 +166,105 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
     assert_raises(ArgumentError) { ProjectPercentDone::PublicApi::V1.calculate(:project => nil) }
     assert_raises(ArgumentError) { ProjectPercentDone::PublicApi::V1.calculate(:project => Object.new) }
     assert_raises(ArgumentError) { ProjectPercentDone::PublicApi::V1.calculate(:project => Project.new) }
+  end
+
+  def test_history_capabilities_exposes_snapshot_contract
+    with_project_percent_done_settings('history_enabled' => '1') do
+      capabilities = ProjectPercentDone::PublicApi::V1.history_capabilities
+
+      assert_equal 'project_percent_done', capabilities.contract_name
+      assert_equal '1.0', capabilities.history_contract_version
+      assert_equal true, capabilities.history_supported
+      assert_equal true, capabilities.history_enabled
+      assert_equal %i[weekly monthly], capabilities.supported_period_types
+      assert_equal :monthly, capabilities.default_period_type
+      assert_equal 'snapshot', capabilities.calculation_mode
+      assert_equal 'snapshots', capabilities.persistence_mode
+      assert capabilities.frozen?
+      assert capabilities.supported_period_types.frozen?
+    end
+  end
+
+  def test_progress_at_returns_completed_monthly_snapshot
+    snapshot = create_history_snapshot(Date.new(2026, 7, 31), 0, :period_type => 'monthly')
+
+    result = ProjectPercentDone::PublicApi::V1.progress_at(
+      :project => test_project,
+      :date => Date.new(2026, 7, 15)
+    )
+
+    assert_equal true, result.progress_available
+    assert_nil result.unavailable_reason
+    assert_equal snapshot.id, ProjectPercentDoneSnapshot.find_by(
+      :project_id => result.project_id,
+      :period_type => result.period_type,
+      :period_end => result.period_end
+    ).id
+    assert_equal 0, result.display_percent_done
+    assert_equal 0.to_d, result.raw_percent_done
+    assert result.frozen?
+    assert result.warnings.frozen?
+  end
+
+  def test_progress_at_does_not_fallback_to_weekly_snapshot
+    create_history_snapshot(Date.new(2026, 7, 31), 44, :period_type => 'weekly')
+
+    result = ProjectPercentDone::PublicApi::V1.progress_at(
+      :project => test_project,
+      :date => Date.new(2026, 7, 15)
+    )
+
+    assert_equal false, result.progress_available
+    assert_equal :snapshot_missing, result.unavailable_reason
+    assert_equal 'monthly', result.period_type
+    assert_equal Date.new(2026, 7, 31), result.period_end
+  end
+
+  def test_progress_at_refuses_uncompleted_month
+    result = ProjectPercentDone::PublicApi::V1.progress_at(
+      :project => test_project,
+      :date => Time.zone.today
+    )
+
+    assert_equal false, result.progress_available
+    assert_equal :period_not_completed, result.unavailable_reason
+    assert_equal Time.zone.today.end_of_month, result.period_end
+  end
+
+  def test_official_snapshots_between_returns_period_ordered_history
+    create_history_snapshot(Date.new(2026, 5, 31), 20, :period_type => 'monthly')
+    create_history_snapshot(Date.new(2026, 6, 30), 40, :period_type => 'monthly')
+    create_history_snapshot(Date.new(2026, 6, 28), 99, :period_type => 'weekly')
+
+    results = ProjectPercentDone::PublicApi::V1.official_snapshots_between(
+      :project => test_project,
+      :period_type => :monthly,
+      :from => Date.new(2026, 5, 1),
+      :to => Date.new(2026, 6, 30)
+    )
+
+    assert_equal [Date.new(2026, 5, 31), Date.new(2026, 6, 30)], results.map(&:period_end)
+    assert_equal [20, 40], results.map(&:display_percent_done)
+  end
+
+  private
+
+  def create_history_snapshot(period_end, percent, period_type:)
+    ProjectPercentDoneSnapshot.create!(
+      :project => test_project,
+      :snapshot_kind => 'official',
+      :period_type => period_type,
+      :period_end => period_end,
+      :captured_at => Time.zone.local(period_end.year, period_end.month, period_end.day, 23, 59),
+      :project_state => 'active',
+      :snapshot_source => 'direct',
+      :timing => 'on_time',
+      :display_percent_done => percent,
+      :raw_percent_done => percent,
+      :eligible_issue_count => 1,
+      :total_weight => 1,
+      :warnings => [],
+      :calculation_settings => {}
+    )
   end
 end
