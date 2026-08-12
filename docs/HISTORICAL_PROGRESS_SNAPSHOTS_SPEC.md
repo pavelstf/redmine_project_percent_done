@@ -42,6 +42,9 @@ and configured collection email still operate in this shadow mode.
 - Active, closed, archived, out-of-scope, disabled, and missing period states.
 - Configurable issue-detail retention and inactive-project grace period.
 - Graph and table on a dedicated project history page, separate from live calculation details.
+- Weekly/monthly period-type switch on the dedicated project history page.
+- Monthly status notice showing the next month-end snapshot date, expected
+  capture date, days remaining, or overdue/disabled state.
 - Calendar and fiscal quarter/year filters.
 - System-administrator-only issue snapshot details.
 - Administrative diagnostics, preview, manual due capture, cleanup, test email,
@@ -49,6 +52,8 @@ and configured collection email still operate in this shadow mode.
 - Observed project-plan history from configurable start/end date custom fields,
   calendar-time analysis, time-entry boundary anomalies, and guarded forecasts.
 - Configurable operational email notifications.
+- Email digest monthly section showing actual monthly snapshots created by the
+  run, or the same next/overdue/disabled monthly status shown in the UI.
 - Configurable project-history visibility, including production shadow collection.
 - Versioned in-process historical Public API for official snapshots.
 - Monthly official snapshots for completed calendar months, created whenever
@@ -187,6 +192,20 @@ The same daily collector lifecycle promotes due weekly and monthly official
 snapshots. Monthly snapshots are always enabled when historical collection is
 enabled; there is no separate setting. A due monthly snapshot represents the
 completed calendar month whose last day is the monthly `period_end`.
+
+The project history UI can display either weekly or monthly official snapshots.
+Weekly remains the default screen mode. Monthly mode uses month-end periods and
+does not display the weekly forecast, because the V1 forecast is explicitly
+based on consecutive weekly points. The page also displays the next monthly
+period end, expected capture date, days remaining, and overdue/disabled status.
+
+The collection notification email includes a monthly section. When the run
+created monthly official snapshots, the section summarizes the actual rows
+officialized by that run, grouped by `period_type = monthly` and `period_end`.
+When the run did not create monthly snapshots, the section reports the next
+monthly period or overdue/disabled status using the same scheduling rules as the
+project history page. The email must not infer monthly success from the weekly
+`target_period_end` alone.
 
 ### Operational rotation
 

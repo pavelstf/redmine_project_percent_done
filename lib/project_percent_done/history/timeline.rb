@@ -7,10 +7,11 @@ module ProjectPercentDone
         end
       end
 
-      attr_reader :project, :selection, :today
+      attr_reader :project, :selection, :today, :period_type
 
-      def initialize(project, selection: nil, today: nil)
+      def initialize(project, selection: nil, today: nil, period_type: 'weekly')
         @project = project
+        @period_type = %w[weekly monthly].include?(period_type.to_s) ? period_type.to_s : 'weekly'
         @selection = selection.presence || ProjectPercentDone::Settings.history_default_period
         @today = today || Time.zone.today
       end
@@ -18,11 +19,11 @@ module ProjectPercentDone
       def entries
         return [] unless bounds
 
-        snapshots = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id, :period_end => bounds).index_by(&:period_end)
-        first_snapshot = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).order(:period_end => :asc).first
+        snapshots = snapshot_scope.where(:period_end => bounds).index_by(&:period_end)
+        first_snapshot = snapshot_scope.order(:period_end => :asc).first
         observed_start = first_snapshot.try(:project_start_date) || current_project_start_date
         runs = ProjectPercentDoneCollectionRun.where(:target_period_end => bounds).latest_first.group_by(&:target_period_end)
-        sundays(bounds.begin, bounds.end).map do |date|
+        period_dates(bounds.begin, bounds.end).map do |date|
           snapshot = snapshots[date]
           run = runs[date].try(:first)
           state = snapshot.try(:project_state) || virtual_state(date, first_snapshot, observed_start, run)
@@ -31,8 +32,7 @@ module ProjectPercentDone
       end
 
       def options
-        values = [
-          ['13 weeks', '13'], ['26 weeks', '26'], ['52 weeks', '52'], ['104 weeks', '104'],
+        values = period_span_options + [
           [I18n.t(:label_project_percent_done_history_current_quarter), 'current_quarter'],
           [I18n.t(:label_project_percent_done_history_current_year), 'current_year'],
           [I18n.t(:label_project_percent_done_history_all), 'all']
@@ -59,21 +59,25 @@ module ProjectPercentDone
       end
 
       def selected
-        options.any? { |_label, value| value == selection } ? selection : ProjectPercentDone::Settings.history_default_period
+        fallback = monthly? ? '12' : ProjectPercentDone::Settings.history_default_period
+        options.any? { |_label, value| value == selection } ? selection : fallback
       end
 
       private
 
       def bounds
         @bounds ||= begin
-          last_sunday = today - today.wday
+          end_date = latest_completed_period_end
           case selected
           when /\A(13|26|52|104)\z/
             weeks = selected.to_i
-            (last_sunday - (weeks - 1).weeks)..last_sunday
+            (end_date - (weeks - 1).weeks)..end_date
+          when /\A(6|12|24)\z/
+            months = selected.to_i
+            ((end_date << (months - 1)).beginning_of_month..end_date)
           when 'all'
-            minimum = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).minimum(:period_end)
-            minimum ? minimum..last_sunday : nil
+            minimum = snapshot_scope.minimum(:period_end)
+            minimum ? minimum..end_date : nil
           when 'current_quarter'
             current_named_bounds('quarter')
           when 'current_year'
@@ -83,7 +87,7 @@ module ProjectPercentDone
           when /\A(fiscal):(\d{4}):(year|q[1-4])\z/
             named_bounds(Regexp.last_match(2).to_i, ProjectPercentDone::Settings.history_fiscal_year_start_month, Regexp.last_match(3))
           else
-            (last_sunday - 51.weeks)..last_sunday
+            default_bounds(end_date)
           end
         end
       end
@@ -118,14 +122,24 @@ module ProjectPercentDone
         dates
       end
 
+      def month_ends(start_date, end_date)
+        date = start_date.end_of_month
+        dates = []
+        while date <= end_date
+          dates << date
+          date = (date + 1.day).end_of_month
+        end
+        dates
+      end
+
       def available_years
-        years = ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).pluck(:period_end).compact.map(&:year)
+        years = snapshot_scope.pluck(:period_end).compact.map(&:year)
         (years + [today.year]).uniq.sort.reverse
       end
 
       def available_fiscal_years
         month = ProjectPercentDone::Settings.history_fiscal_year_start_month
-        ProjectPercentDoneSnapshot.weekly_official.where(:project_id => project.id).pluck(:period_end).compact.map do |date|
+        snapshot_scope.pluck(:period_end).compact.map do |date|
           date.month < month ? date.year - 1 : date.year
         end.push(today.month < month ? today.year - 1 : today.year).uniq.sort.reverse
       end
@@ -152,6 +166,37 @@ module ProjectPercentDone
         value.is_a?(Date) ? value : Date.iso8601(value.to_s)
       rescue ArgumentError
         nil
+      end
+
+      def monthly?
+        period_type == 'monthly'
+      end
+
+      def snapshot_scope
+        scope = monthly? ? ProjectPercentDoneSnapshot.monthly_official : ProjectPercentDoneSnapshot.weekly_official
+        scope.where(:project_id => project.id)
+      end
+
+      def period_dates(start_date, end_date)
+        monthly? ? month_ends(start_date, end_date) : sundays(start_date, end_date)
+      end
+
+      def latest_completed_period_end
+        completed = monthly? ? today.beginning_of_month - 1.day : today - today.wday
+        latest_snapshot_period_end = snapshot_scope.maximum(:period_end)
+        latest_snapshot_period_end && latest_snapshot_period_end > completed ? latest_snapshot_period_end : completed
+      end
+
+      def default_bounds(end_date)
+        monthly? ? ((end_date << 11).beginning_of_month..end_date) : ((end_date - 51.weeks)..end_date)
+      end
+
+      def period_span_options
+        if monthly?
+          [['6 months', '6'], ['12 months', '12'], ['24 months', '24']]
+        else
+          [['13 weeks', '13'], ['26 weeks', '26'], ['52 weeks', '52'], ['104 weeks', '104']]
+        end
       end
     end
   end

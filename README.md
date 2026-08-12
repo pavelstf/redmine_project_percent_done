@@ -151,7 +151,8 @@ points form a positive trend; they remain shadow indicators and never alter the
 live calculation.
 
 Run the collector once per day. It retains one operational backup per project
-and promotes the closest eligible capture to the official Sunday period:
+and promotes the closest eligible capture to the official Sunday period and to
+the completed calendar month end when a monthly snapshot is due:
 
 ```bash
 cd /path/to/redmine
@@ -161,7 +162,10 @@ RAILS_ENV=production bundle exec rake redmine:project_percent_done:snapshots
 Configured notification email is sent according to the history email settings
 when the run creates, promotes, repairs, or records a reportable state. The rake
 task is independent from project history visibility, so production can start
-collecting data with history hidden from project users.
+collecting data with history hidden from project users. The digest includes a
+monthly section: actual monthly snapshots for the run when present, otherwise
+the next monthly period end, expected capture date, days remaining, or overdue
+state.
 
 Example cron entry for 00:05 server time:
 
@@ -288,7 +292,9 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 
 - [Calculation behavior](docs/CALCULATION.md)
 - [Public API V1](docs/PUBLIC_API_V1.md)
+- [Historical API integration brief 1.3.3](docs/API_INTEGRATION_BRIEF_1.3.3.md)
 - [Historical progress snapshots V1 specification](docs/HISTORICAL_PROGRESS_SNAPSHOTS_SPEC.md)
+- [Handoff 1.3.3](docs/HANDOFF_1.3.3.md)
 - [Production runbook 1.2.0](docs/PRODUCTION_RUNBOOK_1.2.0.md)
 - [Deployment notes](docs/DEPLOYMENT.md)
 - [Release checklist](docs/RELEASE.md)

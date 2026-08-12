@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.3] - 2026-08-12
+
+### Fixed
+
+- Monthly status no longer reports the first already-past monthly period as
+  overdue when monthly history has just been introduced and a project has no
+  monthly snapshots yet. The UI now waits for the current month-end snapshot.
+- Monthly overdue detection still reports real gaps after monthly history has
+  started for a project.
+
+### Validation
+
+- Full Redmine 6.1.2 plugin suite passed with `107 runs`, `513 assertions`, `0
+  failures`, `0 errors`, and `0 skips`.
+- Staging installation was confirmed with version `1.3.3`, monthly status
+  `waiting`, next monthly period end `2026-09-30`, expected capture
+  `2026-10-01`, and no fresh log errors.
+
+## [1.3.2] - 2026-08-12
+
+### Fixed
+
+- Monthly history timeline now displays future-dated staging simulation
+  snapshots whose stored official month is after the current real completed
+  month.
+- Monthly status advances to the month after the latest stored official monthly
+  snapshot, avoiding a duplicate "next" period for an already captured month.
+
+## [1.3.1] - 2026-08-12
+
+### Added
+
+- Dedicated weekly/monthly selector on the project `Progress history` page.
+- Monthly status text on the project history page, including next monthly
+  period end, expected capture date, days remaining, disabled state, and overdue
+  state.
+- Monthly digest section in collection notification emails. Runs that create
+  monthly official snapshots report the actual monthly rows; ordinary runs
+  report the next/overdue/disabled monthly status.
+
+### Changed
+
+- Weekly forecasts remain weekly-only and are hidden in monthly mode.
+- The project history timeline is period-type aware while retaining the
+  existing weekly default.
+
 ## [1.3.0] - 2026-08-12
 
 ### Added

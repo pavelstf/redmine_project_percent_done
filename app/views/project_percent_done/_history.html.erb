@@ -1,5 +1,6 @@
 <% chart_mode = @history_chart_mode %>
 <% change_mode = @history_change_mode %>
+<% period_type = @history_period_type %>
 <% chart_data = @history_entries.map do |entry|
      snapshot = entry.snapshot
      {
@@ -26,12 +27,40 @@
 <% end %>
 
 <section class="ppd-history" data-ppd-history data-user-id="<%= User.current.id %>"
+         data-selected-period-type="<%= period_type %>"
          data-selected-period="<%= @history_timeline.selected %>"
          data-selected-chart-mode="<%= chart_mode %>" data-selected-change-mode="<%= change_mode %>"
          data-default-chart-mode="<%= chart_mode %>" data-default-change-mode="<%= change_mode %>"
          data-chart="<%= html_escape(chart_data.to_json) %>">
   <h2><%= l(:label_project_percent_done_history) %></h2>
   <% latest_plan_snapshot = @history_entries.reverse_each.find { |entry| entry.snapshot }.try(:snapshot) %>
+  <% if @history_monthly_status %>
+    <p class="<%= @history_monthly_status.overdue? ? 'warning' : 'info' %>">
+      <strong><%= l(:label_project_percent_done_history_monthly_snapshots) %>:</strong>
+      <% if @history_monthly_status.disabled? %>
+        <%= l(:text_project_percent_done_history_monthly_disabled,
+              :period_end => format_date(@history_monthly_status.next_period_end),
+              :capture_date => format_date(@history_monthly_status.expected_capture_date)) %>
+      <% elsif @history_monthly_status.due_today? %>
+        <%= l(:text_project_percent_done_history_monthly_due_today,
+              :period_end => format_date(@history_monthly_status.next_period_end),
+              :capture_date => format_date(@history_monthly_status.expected_capture_date)) %>
+      <% elsif @history_monthly_status.overdue? %>
+        <%= l(:text_project_percent_done_history_monthly_overdue,
+              :period_end => format_date(@history_monthly_status.next_period_end),
+              :capture_date => format_date(@history_monthly_status.expected_capture_date)) %>
+      <% else %>
+        <%= l(:text_project_percent_done_history_monthly_waiting,
+              :period_end => format_date(@history_monthly_status.next_period_end),
+              :capture_date => format_date(@history_monthly_status.expected_capture_date),
+              :days => @history_monthly_status.days_remaining) %>
+      <% end %>
+      <% if @history_monthly_status.latest_period_end %>
+        <%= l(:text_project_percent_done_history_monthly_latest,
+              :period_end => format_date(@history_monthly_status.latest_period_end)) %>
+      <% end %>
+    </p>
+  <% end %>
   <% if latest_plan_snapshot %>
     <div class="ppd-plan-summary">
       <p><strong><%= l(:label_project_percent_done_history_observed_plan) %>:</strong>
@@ -40,7 +69,7 @@
         <%= latest_plan_snapshot.project_planned_end_date ? format_date(latest_plan_snapshot.project_planned_end_date) : '-' %>
         (<%= l("label_project_percent_done_history_plan_phase_#{latest_plan_snapshot.plan_phase}", :default => latest_plan_snapshot.plan_phase) %>)
       </p>
-      <% if @history_forecast.available? %>
+      <% if @history_forecast && @history_forecast.available? %>
         <p><strong><%= l(:label_project_percent_done_history_forecast) %>:</strong>
           <%= format_date(@history_forecast.projected_end_date) %>
           (<%= l(:text_project_percent_done_history_forecast_basis,
@@ -49,7 +78,7 @@
                  :confidence => l("label_project_percent_done_history_confidence_#{@history_forecast.confidence}")) %>;
           <%= l(:text_project_percent_done_history_forecast_variance,
                  :days => @history_forecast.planned_end_variance_days) %>)</p>
-      <% else %>
+      <% elsif @history_forecast %>
         <p><strong><%= l(:label_project_percent_done_history_forecast) %>:</strong>
           <%= l("text_project_percent_done_history_forecast_#{@history_forecast.reason}",
                 :default => l(:text_project_percent_done_history_forecast_unavailable)) %></p>
@@ -58,6 +87,11 @@
     </div>
   <% end %>
   <form action="<%= project_percent_done_history_path(:project_id => @project.identifier) %>" method="get" class="ppd-history-controls">
+    <label><%= l(:label_project_percent_done_history_period_type) %>
+      <%= select_tag :history_period_type, options_for_select([
+        [l(:label_project_percent_done_history_period_type_weekly), 'weekly'],
+        [l(:label_project_percent_done_history_period_type_monthly), 'monthly']
+      ], period_type), :data => { :ppd_pref => 'period_type' } %></label>
     <label><%= l(:label_project_percent_done_history_period) %>
       <%= select_tag :history_period, options_for_select(@history_timeline.options, @history_timeline.selected), :data => { :ppd_pref => 'period' } %></label>
     <label><%= l(:label_project_percent_done_history_chart_mode_control) %>
@@ -76,7 +110,8 @@
 
   <% if @history_entries.any? %>
     <% if @history_entries.none?(&:snapshot) %>
-      <p class="info"><%= l(:text_project_percent_done_history_no_official_snapshots) %></p>
+      <p class="info"><%= l(:text_project_percent_done_history_no_official_snapshots,
+                            :period_type => l("label_project_percent_done_history_period_type_#{period_type}").downcase) %></p>
     <% end %>
     <div class="ppd-history-chart" role="img" aria-label="<%= l(:label_project_percent_done_history_chart_accessible) %>">
       <svg viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -156,9 +191,9 @@
     </table>
     <% if @history_page_count > 1 %>
       <p class="pagination">
-        <% if @history_page > 1 %><%= link_to l(:label_previous), project_percent_done_history_path(:project_id => @project.identifier, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page - 1) %><% end %>
+        <% if @history_page > 1 %><%= link_to l(:label_previous), project_percent_done_history_path(:project_id => @project.identifier, :history_period_type => period_type, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page - 1) %><% end %>
         <span><%= l(:label_project_percent_done_history_page, :page => @history_page, :pages => @history_page_count) %></span>
-        <% if @history_page < @history_page_count %><%= link_to l(:label_next), project_percent_done_history_path(:project_id => @project.identifier, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page + 1) %><% end %>
+        <% if @history_page < @history_page_count %><%= link_to l(:label_next), project_percent_done_history_path(:project_id => @project.identifier, :history_period_type => period_type, :history_period => @history_timeline.selected, :history_chart_mode => chart_mode, :history_change_mode => change_mode, :history_page => @history_page + 1) %><% end %>
       </p>
     <% end %>
   <% else %><p class="nodata"><%= l(:label_no_data) %></p><% end %>
@@ -189,6 +224,7 @@
     });
     var query = new URLSearchParams(window.location.search);
     var preferenceTargets = {
+      period_type: ['history_period_type', root.dataset.selectedPeriodType],
       period: ['history_period', root.dataset.selectedPeriod],
       chart_mode: ['history_chart_mode', root.dataset.selectedChartMode],
       change_mode: ['history_change_mode', root.dataset.selectedChangeMode]

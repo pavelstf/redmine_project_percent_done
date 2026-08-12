@@ -73,12 +73,15 @@ class ProjectPercentDoneController < ApplicationController
   end
 
   def load_history
+    @history_period_type = %w[weekly monthly].include?(params[:history_period_type]) ? params[:history_period_type] : 'weekly'
     @history_timeline = ProjectPercentDone::History::Timeline.new(
       @project,
-      :selection => params[:history_period]
+      :selection => params[:history_period],
+      :period_type => @history_period_type
     )
     @history_entries = @history_timeline.entries
-    @history_forecast = ProjectPercentDone::History::Forecast.new(@project).call
+    @history_forecast = @history_period_type == 'weekly' ? ProjectPercentDone::History::Forecast.new(@project).call : nil
+    @history_monthly_status = ProjectPercentDone::History::MonthlyStatus.new(:project => @project).call
     @history_chart_mode = %w[percent_only extended].include?(params[:history_chart_mode]) ? params[:history_chart_mode] : ProjectPercentDone::Settings.history_chart_mode
     @history_change_mode = %w[hidden percentage_points relative_percent].include?(params[:history_change_mode]) ? params[:history_change_mode] : ProjectPercentDone::Settings.history_change_display
     @history_page = [params[:history_page].to_i, 1].max

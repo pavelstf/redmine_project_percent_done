@@ -62,6 +62,51 @@ class ProjectPercentDone::History::TimelineTest < ActiveSupport::TestCase
     assert_equal 'not_observed', entries[Date.new(2026, 6, 28)].state
   end
 
+  def test_monthly_timeline_uses_month_ends_and_ignores_weekly_rows
+    create_snapshot(Date.new(2026, 6, 28), 'active', 99, :period_type => 'weekly')
+    create_snapshot(Date.new(2026, 6, 30), 'active', 45, :period_type => 'monthly')
+
+    timeline = ProjectPercentDone::History::Timeline.new(
+      test_project,
+      :selection => '6',
+      :today => Date.new(2026, 7, 15),
+      :period_type => 'monthly'
+    )
+    entries = timeline.entries.index_by(&:period_end)
+
+    assert_equal 'active', entries[Date.new(2026, 6, 30)].state
+    assert_equal 45, entries[Date.new(2026, 6, 30)].snapshot.display_percent_done
+    refute entries.key?(Date.new(2026, 6, 28))
+  end
+
+  def test_monthly_timeline_falls_back_to_monthly_default_period
+    timeline = ProjectPercentDone::History::Timeline.new(
+      test_project,
+      :selection => '52',
+      :today => Date.new(2026, 7, 15),
+      :period_type => 'monthly'
+    )
+
+    assert_equal '12', timeline.selected
+    assert timeline.options.any? { |label, value| label == '12 months' && value == '12' }
+  end
+
+  def test_monthly_timeline_includes_newer_staging_simulation_snapshot
+    create_snapshot(Date.new(2026, 7, 31), 'active', 45, :period_type => 'monthly')
+    create_snapshot(Date.new(2026, 8, 31), 'active', 60, :period_type => 'monthly')
+
+    timeline = ProjectPercentDone::History::Timeline.new(
+      test_project,
+      :selection => 'all',
+      :today => Date.new(2026, 8, 12),
+      :period_type => 'monthly'
+    )
+    entries = timeline.entries.index_by(&:period_end)
+
+    assert_equal 45, entries[Date.new(2026, 7, 31)].snapshot.display_percent_done
+    assert_equal 60, entries[Date.new(2026, 8, 31)].snapshot.display_percent_done
+  end
+
   private
 
   def create_snapshot(period_end, state, percent, period_type: 'weekly')

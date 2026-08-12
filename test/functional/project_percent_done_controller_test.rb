@@ -83,9 +83,39 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_equal :project_percent_done_history, @controller.current_menu_item
       assert_select 'section[data-ppd-history]', :count => 1
       assert_select "form.ppd-history-controls[action=\"#{project_percent_done_history_path(:project_id => test_project.identifier)}\"]"
-      assert_includes @response.body, I18n.t(:text_project_percent_done_history_no_official_snapshots)
+      assert_select 'select[name=?]', 'history_period_type'
+      assert_includes @response.body, I18n.t(
+        :text_project_percent_done_history_no_official_snapshots,
+        :period_type => I18n.t(:label_project_percent_done_history_period_type_weekly).downcase
+      )
       assert_includes @response.body, I18n.t(:label_project_percent_done_history_chart_mode_control)
       refute_includes @response.body, I18n.t(:label_project_percent_done_history_chart_mode)
+    end
+  end
+
+  def test_history_page_can_render_monthly_snapshots
+    ProjectPercentDoneSnapshot.create!(
+      :project => test_project, :snapshot_kind => 'official', :period_type => 'monthly',
+      :period_end => Date.new(2026, 7, 31),
+      :captured_at => Time.zone.local(2026, 8, 1, 0, 15), :project_state => 'active',
+      :display_percent_done => 44
+    )
+
+    with_project_percent_done_settings(
+      'display_project_tab' => '1',
+      'history_enabled' => '1',
+      'history_visibility' => 'project_access'
+    ) do
+      get :history, :params => {
+        :project_id => test_project.identifier,
+        :history_period_type => 'monthly',
+        :history_period => '6'
+      }
+
+      assert_response :success
+      assert_select 'select[name=?] option[selected=?][value=?]', 'history_period_type', 'selected', 'monthly'
+      assert_includes @response.body, '44%'
+      refute_includes @response.body, I18n.t(:label_project_percent_done_history_forecast)
     end
   end
 

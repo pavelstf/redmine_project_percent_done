@@ -1,5 +1,42 @@
 # Testing Log
 
+## 2026-08-12 - 1.3.3 Monthly Initial-Start Status Fix
+
+- Fixed the monthly status banner for installations/projects that have no
+  monthly official snapshots yet. The first past monthly period is no longer
+  shown as overdue when monthly collection is newly introduced; the status waits
+  for the current month-end snapshot.
+- Added regression coverage proving that real monthly gaps still become
+  overdue after monthly history has started.
+- Full Redmine 6.1.2 plugin suite passed:
+  `107 runs`, `513 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Prepared production and staging ZIP packages:
+  - `redmine_project_percent_done-1.3.3-production-20260812.zip`
+  - `redmine_project_percent_done-1.3.3-staging-20260812.zip`
+  - SHA-256 for both: `2ABA8D485247F2B4B8FBAE4158BBD3335975FEE5CDD1B5E4004A053DECD0ACDD`
+  - size for both: `151592` bytes
+  - archive root: `redmine_project_percent_done/`
+- Staging was confirmed OK by the user after installation:
+  `plugin_version=1.3.3`, `history_enabled=true`,
+  `monthly_status_state=waiting`, `monthly_next_period_end=2026-09-30`,
+  `monthly_expected_capture_date=2026-10-01`, and no fresh log errors.
+
+## 2026-08-12 - 1.3.0-1.3.2 Historical Public API and Monthly Snapshots
+
+- Added official monthly snapshot support on top of the existing weekly history
+  model. Existing official rows migrate to `period_type = weekly`; monthly rows
+  use `period_type = monthly`.
+- Added historical in-process Public API methods:
+  `history_capabilities`, `latest_official_snapshot`,
+  `official_snapshot_for`, `official_snapshots_between`, and `progress_at`.
+- Added project history period-type selection, monthly table/chart support, and
+  monthly digest reporting.
+- Fixed the staging simulation edge case where a future-dated monthly snapshot
+  was created and emailed but hidden from the monthly table/chart.
+- Full-suite results during the 1.3.x cycle were green; detailed per-patch
+  evidence is in `docs/TESTING_1.3.0.md`, `docs/TESTING_1.3.1.md`,
+  `docs/TESTING_1.3.2.md`, and `docs/TESTING_1.3.3.md`.
+
 ## 2026-07-16 - 1.2.0 Historical Progress V1
 
 - Implemented optional daily operational and weekly official history with

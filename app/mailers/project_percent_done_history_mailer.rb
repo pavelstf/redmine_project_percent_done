@@ -15,6 +15,7 @@ class ProjectPercentDoneHistoryMailer < Mailer
   def prepare(run)
     @run = run
     @errors = run.respond_to?(:errors_list) ? run.errors_list : []
+    @monthly_digest = ProjectPercentDone::History::MonthlyRunDigest.new(run)
     root = Redmine::Utils.relative_url_root.to_s
     @diagnostics_url = "#{Setting.protocol}://#{Setting.host_name}#{root}/settings/plugin/#{ProjectPercentDone::PLUGIN_ID}"
   end
