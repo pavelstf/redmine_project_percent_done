@@ -1,5 +1,26 @@
 # Testing Log
 
+## 2026-08-12 - 1.3.4 Fresh-Install Migration Safety
+
+- Reviewed the migration chain and confirmed the issue: current migration `001`
+  already creates `project_percent_done_snapshots.period_type`, while migration
+  `002` tried to add the same column unconditionally.
+- Fixed migration `002` so it is safe in both supported scenarios:
+  - fresh install: skip duplicate `period_type` column/index creation when
+    `001` already created them;
+  - upgrade from pre-period-type history: add `period_type`, backfill existing
+    snapshot rows to `weekly`, remove the old uniqueness index, and add the new
+    `project_id + period_type + period_end` uniqueness boundary.
+- Added focused migration strategy tests that simulate fresh-install and
+  upgrade schema shapes without dropping real test tables.
+- Added and ran `scripts/check_period_type_migrations.ps1`, which executes the
+  real migrations against a temporary SQLite database. Result:
+  `fresh_install=ok` and `upgrade=ok`.
+- Focused migration/API check passed:
+  `110 runs`, `527 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Full Redmine 6.1.2 plugin suite passed:
+  `110 runs`, `527 assertions`, `0 failures`, `0 errors`, `0 skips`.
+
 ## 2026-08-12 - 1.3.3 Monthly Initial-Start Status Fix
 
 - Fixed the monthly status banner for installations/projects that have no

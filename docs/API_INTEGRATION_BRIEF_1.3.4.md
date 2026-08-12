@@ -1,6 +1,6 @@
 # Project Percent Done Historical API Integration Brief
 
-Version: `1.3.3`
+Version: `1.3.4`
 
 Date: 2026-08-12
 
@@ -32,7 +32,7 @@ Contract versions:
 |---|---|
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
-| Plugin release | `1.3.3` |
+| Plugin release | `1.3.4` |
 | Algorithm version | `1.0` |
 
 Consumers should check capabilities at runtime and fail closed if the expected
@@ -53,7 +53,7 @@ Expected capability values in this release:
   :contract_name => "project_percent_done",
   :contract_version => "1.0",
   :history_contract_version => "1.0",
-  :plugin_version => "1.3.3",
+  :plugin_version => "1.3.4",
   :algorithm_version => "1.0",
   :history_supported => true,
   :history_enabled => true_or_false,
@@ -318,13 +318,23 @@ end
 
 ## Current Release State
 
-`1.3.3` was validated locally in the shared Redmine 6.1.2 test runtime:
+`1.3.4` keeps the same historical API contract as `1.3.3` and adds a
+fresh-install migration safety fix.
+
+Migration smoke validation:
 
 ```text
-107 runs, 513 assertions, 0 failures, 0 errors, 0 skips
+fresh_install=ok
+upgrade=ok
 ```
 
-Staging installation was confirmed on 2026-08-12 with:
+Full shared Redmine 6.1.2 test runtime validation:
+
+```text
+110 runs, 527 assertions, 0 failures, 0 errors, 0 skips
+```
+
+Previous `1.3.3` staging installation was confirmed on 2026-08-12 with:
 
 ```text
 plugin_version=1.3.3

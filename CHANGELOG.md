@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.4] - 2026-08-12
+
+### Fixed
+
+- Migration `002` is now safe for both fresh install and upgrade scenarios.
+  Fresh installs where migration `001` already created `period_type` no longer
+  attempt to add the column or uniqueness index a second time.
+- Upgrades from older history schemas still add `period_type`, assign existing
+  rows to `weekly`, replace the old `project_id + period_end` unique index, and
+  preserve all historical snapshot rows.
+
+### Validation
+
+- Added migration strategy tests for fresh-install and upgrade schema shapes.
+
 ## [1.3.3] - 2026-08-12
 
 ### Fixed

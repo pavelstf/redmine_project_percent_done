@@ -1,7 +1,15 @@
 class AddPeriodTypeToProjectPercentDoneSnapshots < ActiveRecord::Migration[6.1]
   def up
-    add_column :project_percent_done_snapshots, :period_type, :string,
-               :null => false, :default => 'weekly'
+    unless column_exists?(:project_percent_done_snapshots, :period_type)
+      add_column :project_percent_done_snapshots, :period_type, :string,
+                 :null => false, :default => 'weekly'
+    end
+
+    execute <<~SQL.squish
+      UPDATE project_percent_done_snapshots
+         SET period_type = 'weekly'
+       WHERE period_type IS NULL OR period_type = ''
+    SQL
 
     if index_exists?(:project_percent_done_snapshots, [:project_id, :period_end],
                      :name => 'idx_ppd_snapshots_project_period')
@@ -9,10 +17,14 @@ class AddPeriodTypeToProjectPercentDoneSnapshots < ActiveRecord::Migration[6.1]
                    :name => 'idx_ppd_snapshots_project_period'
     end
 
-    add_index :project_percent_done_snapshots,
-              [:project_id, :period_type, :period_end],
-              :unique => true,
-              :name => 'idx_ppd_snapshots_project_period'
+    unless index_exists?(:project_percent_done_snapshots,
+                         [:project_id, :period_type, :period_end],
+                         :name => 'idx_ppd_snapshots_project_period')
+      add_index :project_percent_done_snapshots,
+                [:project_id, :period_type, :period_end],
+                :unique => true,
+                :name => 'idx_ppd_snapshots_project_period'
+    end
   end
 
   def down
@@ -23,11 +35,14 @@ class AddPeriodTypeToProjectPercentDoneSnapshots < ActiveRecord::Migration[6.1]
                    :name => 'idx_ppd_snapshots_project_period'
     end
 
-    add_index :project_percent_done_snapshots,
-              [:project_id, :period_end],
-              :unique => true,
-              :name => 'idx_ppd_snapshots_project_period'
+    unless index_exists?(:project_percent_done_snapshots, [:project_id, :period_end],
+                         :name => 'idx_ppd_snapshots_project_period')
+      add_index :project_percent_done_snapshots,
+                [:project_id, :period_end],
+                :unique => true,
+                :name => 'idx_ppd_snapshots_project_period'
+    end
 
-    remove_column :project_percent_done_snapshots, :period_type
+    remove_column :project_percent_done_snapshots, :period_type if column_exists?(:project_percent_done_snapshots, :period_type)
   end
 end
