@@ -1,7 +1,10 @@
-require File.expand_path('../../../test/test_helper', __FILE__)
+redmine_root = ENV.fetch('REDMINE_ROOT', Dir.pwd)
+require File.expand_path('test/test_helper', redmine_root)
 require 'securerandom'
 
 module ProjectPercentDoneTestSupport
+  private
+
   def with_project_percent_done_settings(settings)
     previous_settings = Setting.plugin_redmine_project_percent_done
     Setting.plugin_redmine_project_percent_done = ProjectPercentDone::Settings::DEFAULTS.merge(settings)
@@ -50,5 +53,37 @@ module ProjectPercentDoneTestSupport
         :done_ratio => 0
       }.merge(attributes)
     )
+  end
+
+  def create_project_type_custom_field(values = %w[Internal External])
+    ProjectCustomField.create!(
+      :name => "Project type #{SecureRandom.hex(3)}",
+      :field_format => 'list',
+      :possible_values => values,
+      :multiple => true,
+      :is_for_all => true
+    )
+  end
+
+  def create_project_date_custom_field(name = nil)
+    ProjectCustomField.create!(
+      :name => name || "Project date #{SecureRandom.hex(3)}",
+      :field_format => 'date',
+      :is_for_all => true
+    )
+  end
+
+  def set_project_custom_field_values(project, custom_field, values)
+    project.custom_field_values = { custom_field.id.to_s => Array(values) }
+    project.save!
+    project.reload
+  end
+
+  def set_project_custom_fields(project, values)
+    project.custom_field_values = values.each_with_object({}) do |(field, value), result|
+      result[field.id.to_s] = value
+    end
+    project.save!
+    project.reload
   end
 end

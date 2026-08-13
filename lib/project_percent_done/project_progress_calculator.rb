@@ -11,9 +11,20 @@ module ProjectPercentDone
       all_issues = project_issues
       all_issue_ids = all_issues.map(&:id)
       candidate_issues = calculation_candidates(all_issues)
-      return empty_result(:no_issues, all_issue_ids) if candidate_issues.empty?
-
       candidate_estimated_issues = candidate_issues.select { |issue| estimated?(issue) }
+      candidate_unestimated_issues = candidate_issues.reject { |issue| estimated?(issue) }
+      aggregate_fields = aggregate_fields_for(
+        all_issues,
+        candidate_issues,
+        candidate_estimated_issues,
+        candidate_unestimated_issues
+      )
+
+      if candidate_issues.empty?
+        warning = all_issues.empty? ? :no_issues : :no_eligible_issues
+        return empty_result(warning, all_issue_ids, [], all_issue_ids, 0, 0, [], [], aggregate_fields)
+      end
+
       average_estimate = average_estimate_for(candidate_estimated_issues)
       included_issues = []
 
@@ -28,13 +39,19 @@ module ProjectPercentDone
 
       weighted_sum = 0.0
       total_weight = 0.0
+      imputed_weight = 0.0
 
       included_issues.each do |issue|
         weight = weight_for(issue, average_estimate)
 
         weighted_sum += weighted_value_for(issue, weight)
         total_weight += weight
+        imputed_weight += weight unless estimated?(issue)
       end
+
+      aggregate_fields[:included_issue_count] = included_issues.size
+      aggregate_fields[:known_estimated_hours] = estimated_issues.sum { |issue| issue.estimated_hours.to_f }
+      aggregate_fields[:imputed_weight] = imputed_weight
 
       included_issue_ids = included_issues.map(&:id)
       not_included_issue_ids = all_issue_ids - included_issue_ids
@@ -42,7 +59,7 @@ module ProjectPercentDone
       not_included_rows = details_mode? ? breakdown_rows_for(all_issues.reject { |issue| included_issue_ids.include?(issue.id) }, false, average_estimate) : []
 
       if total_weight <= 0
-        return empty_result(:no_weight, all_issue_ids, included_issue_ids, not_included_issue_ids, estimated_issue_count, unestimated_issue_count, included_rows, not_included_rows)
+        return empty_result(:no_weight, all_issue_ids, included_issue_ids, not_included_issue_ids, estimated_issue_count, unestimated_issue_count, included_rows, not_included_rows, aggregate_fields)
       end
 
       raw_percent_done = (weighted_sum / total_weight) * 100.0
@@ -59,7 +76,8 @@ module ProjectPercentDone
         :not_included_issue_ids => not_included_issue_ids,
         :included_rows => included_rows,
         :not_included_rows => not_included_rows,
-        :warnings => warnings_for(included_issues, unestimated_issue_count)
+        :warnings => warnings_for(included_issues, unestimated_issue_count),
+        **aggregate_fields
       )
     end
 
@@ -214,7 +232,23 @@ module ProjectPercentDone
       warnings
     end
 
-    def empty_result(warning, all_issue_ids = [], included_issue_ids = [], not_included_issue_ids = all_issue_ids, estimated_issue_count = 0, unestimated_issue_count = 0, included_rows = [], not_included_rows = [])
+    def aggregate_fields_for(all_issues, eligible_issues, estimated_eligible_issues, unestimated_eligible_issues)
+      eligible_count = eligible_issues.size
+      {
+        :all_project_issue_count => all_issues.size,
+        :eligible_issue_count => eligible_count,
+        :estimated_eligible_issue_count => estimated_eligible_issues.size,
+        :unestimated_eligible_issue_count => unestimated_eligible_issues.size,
+        :included_issue_count => 0,
+        :excluded_parent_issue_count => all_issues.size - eligible_count,
+        :ignored_unestimated_issue_count => ProjectPercentDone::Settings.unestimated_issue_mode == 'ignore' ? unestimated_eligible_issues.size : 0,
+        :known_estimated_hours => 0.0,
+        :imputed_weight => 0.0,
+        :estimate_coverage_percent => eligible_count.positive? ? (estimated_eligible_issues.size.to_f / eligible_count) * 100.0 : nil
+      }
+    end
+
+    def empty_result(warning, all_issue_ids = [], included_issue_ids = [], not_included_issue_ids = all_issue_ids, estimated_issue_count = 0, unestimated_issue_count = 0, included_rows = [], not_included_rows = [], aggregate_fields = {})
       CalculationResult.new(
         :percent_done => 0,
         :raw_percent_done => 0.0,
@@ -227,7 +261,8 @@ module ProjectPercentDone
         :not_included_issue_ids => not_included_issue_ids,
         :included_rows => included_rows,
         :not_included_rows => not_included_rows,
-        :warnings => [warning]
+        :warnings => [warning],
+        **aggregate_fields
       )
     end
   end

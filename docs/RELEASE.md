@@ -37,9 +37,89 @@ Do not include local files such as:
 - local Redmine checkouts
 - logs or temporary files
 
+## GCR 1.1.1 Staging Package
+
+Version `1.1.1` is a patch release for Administration settings help UI only.
+It does not change calculation behavior, REST output, Public API V1, or the
+Risk Monitor integration contract.
+
+Staging package:
+
+```text
+redmine_project_percent_done-1.1.1-staging-20260710.zip
+```
+
+SHA-256:
+
+```text
+A5DEFBC04FE6C5FBABB42661B80D21B33702147100EFB9C9C97E3E5315466388
+```
+
+Production package:
+
+```text
+redmine_project_percent_done-1.1.1-production-20260710.zip
+```
+
+The Production package is a byte-for-byte copy of the accepted Staging package
+and has the same SHA-256. Production deployment instructions are documented in
+`docs/PRODUCTION_RUNBOOK_1.1.1.md`.
+
+Because `1.1.1` adds `assets/stylesheets/project_percent_done.css`, deployment
+runbooks must include guarded plugin asset copy commands.
+
+Production status:
+
+```text
+production-approved on 2026-07-15
+```
+
+The user confirmed that version `1.1.1` is installed and working as expected
+on both GCR staging and GCR production.
+
+## GCR 1.2.0 Staging Package
+
+Version `1.2.0` adds optional persistent historical progress. It is packaged
+for staging validation only and is not staging-approved until user acceptance.
+
+Package, SHA-256, byte size, exact test evidence, and runbook are recorded in
+`docs/HANDOFF_1.2.0.md` after packaging.
+
+Use `docs/STAGING_RUNBOOK_1.2.0.md`. Full Redmine 6.1.2 suite result:
+`66 runs, 281 assertions, 0 failures, 0 errors, 0 skips`.
+
+## GCR 1.1.0 Promotion Packages
+
+Staging-approved package:
+
+```text
+redmine_project_percent_done-1.1.0-staging-20260701.zip
+```
+
+Production package prepared on 2026-07-10:
+
+```text
+redmine_project_percent_done-1.1.0-production-20260710.zip
+```
+
+The Production package is a byte-for-byte copy of the approved Staging package.
+Both packages have SHA-256:
+
+```text
+A68EE28370864D2A6AB598638BFE5E1A666DFB2605BCAB966F18738AA9571D4C
+```
+
+Staging acceptance is documented in `docs/STAGING_ACCEPTANCE_1.1.0.md`.
+Production deployment instructions are documented in
+`docs/PRODUCTION_RUNBOOK_1.1.0.md`.
+
+Risk Monitor Pro 0.2.3 depends on Project Percent Done `>= 1.1.0` and Public
+API V1. Promote and validate Project Percent Done 1.1.0 on Production before
+deploying Risk Monitor Pro 0.2.3.
+
 ## Tag
 
 ```bash
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.1.0
+git push origin v1.1.0
 ```
