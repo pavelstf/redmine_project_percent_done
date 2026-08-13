@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.6] - 2026-08-13
+
+### Changed
+
+- Project dashboard freshness now separates snapshot recency into latest
+  operational backup, latest official weekly snapshot, and latest official
+  monthly snapshot. The monthly row explicitly reports when no official monthly
+  snapshot exists yet.
+
+## [1.3.5] - 2026-08-13
+
+### Added
+
+- Project dashboard widgets now show the latest stored history snapshot timestamp,
+  snapshot kind, period type, and period end when snapshot data exists. This is
+  visible in both the project overview block and the project sidebar block, so
+  users can judge the freshness of the displayed progress information without
+  opening the history page.
+
+### Validation
+
+- Added hook and partial coverage for the dashboard snapshot freshness display.
+
 ## [1.3.4] - 2026-08-12
 
 ### Fixed

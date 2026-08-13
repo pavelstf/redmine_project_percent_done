@@ -1,5 +1,32 @@
 # Testing Log
 
+## 2026-08-13 - 1.3.6 Dashboard Snapshot Freshness Refinement
+
+- Replaced the single dashboard "last snapshot" line with separated freshness
+  rows for latest operational backup, latest official weekly snapshot, and
+  latest official monthly snapshot.
+- Added an explicit dashboard message when no official monthly snapshot exists
+  yet, while preserving the safe no-table guard during code-before-migrations
+  deployment windows.
+- Focused hook/dashboard check passed:
+  `113 runs`, `544 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Full Redmine 6.1.2 plugin suite passed:
+  `113 runs`, `544 assertions`, `0 failures`, `0 errors`, `0 skips`.
+
+## 2026-08-13 - 1.3.5 Dashboard Snapshot Freshness
+
+- Added dashboard freshness information to the project overview and sidebar
+  Project % done widgets. When stored history exists, the widgets show the
+  latest snapshot capture time, snapshot kind, period type, and period end.
+- Added focused hook/partial coverage proving the latest snapshot is passed to
+  the dashboard partial and rendered. The hook also skips the lookup safely when
+  the snapshot table is not available yet during a code-before-migrations swap.
+- Focused hook/dashboard check passed:
+  `113 runs`, `537 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Full Redmine 6.1.2 plugin suite passed:
+  `113 runs`, `537 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- `git diff --check` passed with only expected Windows LF/CRLF warnings.
+
 ## 2026-08-12 - 1.3.4 Fresh-Install Migration Safety
 
 - Reviewed the migration chain and confirmed the issue: current migration `001`

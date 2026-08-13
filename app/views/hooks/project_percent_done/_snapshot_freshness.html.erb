@@ -1,0 +1,38 @@
+<% operational_snapshot = latest_snapshots[:operational] %>
+<% official_weekly_snapshot = latest_snapshots[:official_weekly] %>
+<% official_monthly_snapshot = latest_snapshots[:official_monthly] %>
+
+<% if operational_snapshot || official_weekly_snapshot || official_monthly_snapshot %>
+  <div class="small ppd-snapshot-freshness">
+    <% if operational_snapshot %>
+      <div>
+        <strong><%= l(:label_project_percent_done_latest_operational_snapshot) %>:</strong>
+        <%= format_time(operational_snapshot.captured_at) %>,
+        <%= l(:"label_project_percent_done_history_period_type_#{operational_snapshot.period_type}") %>
+        <%= l(:label_project_percent_done_snapshot_backup) %>
+      </div>
+    <% end %>
+
+    <% if official_weekly_snapshot %>
+      <div>
+        <strong><%= l(:label_project_percent_done_latest_official_weekly_snapshot) %>:</strong>
+        <%= l(:label_project_percent_done_history_period_end) %>
+        <%= format_date(official_weekly_snapshot.period_end) %>,
+        <%= l(:label_project_percent_done_snapshot_captured_at) %>
+        <%= format_time(official_weekly_snapshot.captured_at) %>
+      </div>
+    <% end %>
+
+    <div>
+      <strong><%= l(:label_project_percent_done_latest_official_monthly_snapshot) %>:</strong>
+      <% if official_monthly_snapshot %>
+        <%= l(:label_project_percent_done_history_period_end) %>
+        <%= format_date(official_monthly_snapshot.period_end) %>,
+        <%= l(:label_project_percent_done_snapshot_captured_at) %>
+        <%= format_time(official_monthly_snapshot.captured_at) %>
+      <% else %>
+        <%= l(:label_project_percent_done_no_official_monthly_snapshot_yet) %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -17,6 +17,7 @@
 <% history_url = project_percent_done_history_path(:project_id => project.identifier) %>
 <% included_url = issue_filter_url.call(result.included_issue_ids) %>
 <% not_included_url = issue_filter_url.call(result.not_included_issue_ids) %>
+<% latest_snapshots = local_assigns[:latest_snapshots] || {} %>
 
 <div class="box project-percent-done">
   <h3><%= l(:label_project_percent_done) %></h3>
@@ -24,6 +25,8 @@
     <strong><%= percent_done_label %></strong>
   </p>
   <%= progress_bar(result.percent_done, :legend => percent_done_label) %>
+  <%= render :partial => 'hooks/project_percent_done/snapshot_freshness',
+             :locals => { :latest_snapshots => latest_snapshots } %>
   <p class="small">
     <%= l(:label_project_percent_done_issue_count) %>:
     <% if included_url %>

@@ -13,7 +13,7 @@ persistence. Historical methods read official snapshots captured by this plugin.
 
 | Version | Value |
 |---|---|
-| Plugin release | `1.3.4` |
+| Plugin release | `1.3.6` |
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
 | Calculation algorithm | `1.0` |

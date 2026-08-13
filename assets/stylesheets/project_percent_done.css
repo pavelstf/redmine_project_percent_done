@@ -60,6 +60,7 @@
 
 .ppd-disabled-settings { opacity: 0.55; }
 .ppd-history-conditional[hidden] { display: none !important; }
+.ppd-snapshot-freshness { color: #667085; margin: 6px 0; }
 .ppd-diagnostic-action { display: inline-block; margin-right: 8px; }
 .ppd-cron-job { border-top: 1px solid #d7dde5; margin-top: 14px; padding-top: 12px; }
 .ppd-cron-job h4 { color: #344054; font-size: 14px; margin: 0 0 6px; }
