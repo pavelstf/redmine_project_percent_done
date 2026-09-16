@@ -1,0 +1,57 @@
+<%= l(:label_project_percent_done_history_email_report) %>
+
+<%= l(:label_project_percent_done_history_run_status) %>: <%= @run.status %>
+<%= l(:label_project_percent_done_history_started_at) %>: <%= @run.started_at %>
+<%= l(:label_project_percent_done_history_completed_at) %>: <%= @run.completed_at || '-' %>
+<%= l(:label_project_percent_done_history_snapshot_type) %>: <%= @run.snapshot_type.presence || 'operational' %>
+<%= l(:label_project_percent_done_history_period_end) %>: <%= @run.target_period_end || '-' %>
+<%= l(:label_project_percent_done_history_projects_processed) %>: <%= @run.projects_processed %>
+<%= l(:label_project_percent_done_history_projects_succeeded) %>: <%= @run.projects_succeeded %>
+<%= l(:label_project_percent_done_history_projects_failed) %>: <%= @run.projects_failed %>
+<%= l(:label_project_percent_done_history_snapshots_created) %>: <%= @run.snapshots_created %>
+<%= l(:label_project_percent_done_history_snapshots_promoted) %>: <%= @run.snapshots_promoted %>
+<%= l(:label_project_percent_done_history_issue_snapshots_created) %>: <%= @run.issue_snapshots_created %>
+<%= l(:label_project_percent_done_history_details_deleted) %>: <%= @run.details_deleted %>
+
+<%= l(:label_project_percent_done_history_monthly_snapshots) %>
+<% if @monthly_digest.any? %>
+<% @monthly_digest.summaries.each do |summary| %>
+- <%= l(:label_project_percent_done_history_period_end) %>: <%= summary.period_end %>
+  <%= l(:label_project_percent_done_history_snapshots_created) %>: <%= summary.total_count %>
+  <%= l(:label_project_percent_done_history_monthly_available) %>: <%= summary.available_count %>
+  <%= l(:label_project_percent_done_history_monthly_progress_range) %>: <%= summary.min_percent || '-' %>% / <%= summary.max_percent || '-' %>% / <%= summary.avg_percent ? format('%.2f', summary.avg_percent) : '-' %>%
+  <%= l(:label_project_percent_done_history_state) %>: <%= summary.state_counts.sort.map { |state, count| "#{l("label_project_percent_done_history_state_#{state}", :default => state)}=#{count}" }.join(', ') %>
+<% end %>
+<% else %>
+<% status = @monthly_digest.status %>
+<% if status.disabled? %>
+<%= l(:text_project_percent_done_history_monthly_disabled,
+      :period_end => status.next_period_end,
+      :capture_date => status.expected_capture_date) %>
+<% elsif status.due_today? %>
+<%= l(:text_project_percent_done_history_monthly_due_today,
+      :period_end => status.next_period_end,
+      :capture_date => status.expected_capture_date) %>
+<% elsif status.overdue? %>
+<%= l(:text_project_percent_done_history_monthly_overdue,
+      :period_end => status.next_period_end,
+      :capture_date => status.expected_capture_date) %>
+<% else %>
+<%= l(:text_project_percent_done_history_monthly_waiting,
+      :period_end => status.next_period_end,
+      :capture_date => status.expected_capture_date,
+      :days => status.days_remaining) %>
+<% end %>
+<% if status.latest_period_end %>
+<%= l(:text_project_percent_done_history_monthly_latest, :period_end => status.latest_period_end) %>
+<% end %>
+<% end %>
+
+<% if @errors.any? %>
+<%= l(:label_project_percent_done_history_errors) %>:
+<% @errors.each do |error| %>
+- <%= error['project_name'].presence || error['project_id'].presence || l(:label_unknown) %>: <%= error['error_class'] %> - <%= l("text_project_percent_done_#{error['message']}", :default => error['message']) %>
+<% end %>
+<% end %>
+
+<%= l(:label_project_percent_done_history_diagnostics) %>: <%= @diagnostics_url %>

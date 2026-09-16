@@ -1,5 +1,7 @@
 # Local workspace files
 master-prompt.md
+REDMINE_HOSTING_CONFIGURATION.md
+GITHUB_PUBLISHING_CONTEXT.md
 *.zip
 *.tar.gz
 *.tgz

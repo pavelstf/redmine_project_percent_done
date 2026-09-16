@@ -8,6 +8,16 @@ Subprojects are not included.
 
 By default, the plugin includes only leaf issues in the current project. A parent issue is excluded when it has at least one child issue in the same project. This prevents double counting the same work through both a parent issue and its children.
 
+Administrators can also configure non-progress statuses and non-progress
+trackers. Matching direct leaf issues are excluded before numerator and
+denominator calculation. Status and tracker matching is by Redmine record ID,
+not by name. The status selector defaults to no status exclusions. Administrators
+can switch to closed-status exclusions or to an all-statuses mode for workflows
+where open statuses should also be removed from progress scope.
+The tracker selector also defaults to no tracker exclusions. Administrators can
+switch it to all trackers before choosing tracker IDs to remove whole issue
+types from progress scope.
+
 ## Formula
 
 ```text
@@ -46,13 +56,42 @@ Included issues are issues that:
 
 - belong to the current project;
 - are in the calculation scope;
+- do not match a configured non-progress status or tracker;
 - have a positive applied weight.
+
+## Estimate Coverage
+
+The Public API reports estimate-presence coverage by eligible issue count:
+
+```text
+estimate_coverage_percent =
+  estimated eligible issues / all eligible issues * 100
+```
+
+It is `nil` when there are no eligible issues. This is not measured-hours
+coverage. An eligible issue is counted as estimated only when its
+`estimated_hours` value is positive; zero, negative, and missing estimates are
+unestimated.
+
+The coverage counts are taken before missing-estimate handling. Consequently,
+an unestimated issue ignored by the calculation still reduces estimate
+coverage.
+
+`known_estimated_hours` is the sum of positive estimates on estimated eligible
+issues included in the calculation. `imputed_weight` is the applied weight
+assigned to included unestimated issues. `total_applied_weight` is the
+denominator of the progress formula.
+
+`known_weight_percent` is `known_estimated_hours / total_applied_weight * 100`
+for hours-weighted modes. It is `nil` for equal-weight calculation and when
+there is no usable denominator.
 
 ## Not Included Issues
 
 Not included issues can be:
 
 - parent issues excluded to avoid double counting;
+- leaf issues excluded by configured non-progress status or tracker;
 - unestimated issues ignored by plugin setting;
 - issues outside the calculation scope.
 
