@@ -8,6 +8,15 @@ api.project_percent_done do
   api.estimated_issue_count @result.estimated_issue_count
   api.unestimated_issue_count @result.unestimated_issue_count
   api.total_weight @result.total_weight
+  api.non_progress_status_scope ProjectPercentDone::Settings.non_progress_status_scope
+  api.non_progress_status_ids ProjectPercentDone::Settings.non_progress_status_ids
+  api.non_progress_tracker_scope ProjectPercentDone::Settings.non_progress_tracker_scope
+  api.non_progress_tracker_ids ProjectPercentDone::Settings.non_progress_tracker_ids
+  api.excluded_non_progress_issue_count @result.excluded_non_progress_issue_count
+  api.excluded_non_progress_estimated_hours @result.excluded_non_progress_estimated_hours
+  api.excluded_non_progress_applied_weight @result.excluded_non_progress_applied_weight
+  api.non_progress_status_names @result.non_progress_status_names
+  api.non_progress_tracker_names @result.non_progress_tracker_names
   api.closed_issue_mode ProjectPercentDone::Settings.closed_issue_mode
   api.unestimated_issue_mode ProjectPercentDone::Settings.unestimated_issue_mode
   api.calculation_mode 'live'

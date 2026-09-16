@@ -8,6 +8,16 @@ Subprojects are not included.
 
 By default, the plugin includes only leaf issues in the current project. A parent issue is excluded when it has at least one child issue in the same project. This prevents double counting the same work through both a parent issue and its children.
 
+Administrators can also configure non-progress statuses and non-progress
+trackers. Matching direct leaf issues are excluded before numerator and
+denominator calculation. Status and tracker matching is by Redmine record ID,
+not by name. The status selector defaults to no status exclusions. Administrators
+can switch to closed-status exclusions or to an all-statuses mode for workflows
+where open statuses should also be removed from progress scope.
+The tracker selector also defaults to no tracker exclusions. Administrators can
+switch it to all trackers before choosing tracker IDs to remove whole issue
+types from progress scope.
+
 ## Formula
 
 ```text
@@ -46,6 +56,7 @@ Included issues are issues that:
 
 - belong to the current project;
 - are in the calculation scope;
+- do not match a configured non-progress status or tracker;
 - have a positive applied weight.
 
 ## Estimate Coverage
@@ -80,6 +91,7 @@ there is no usable denominator.
 Not included issues can be:
 
 - parent issues excluded to avoid double counting;
+- leaf issues excluded by configured non-progress status or tracker;
 - unestimated issues ignored by plugin setting;
 - issues outside the calculation scope.
 

@@ -13,12 +13,18 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
 
       assert_equal 'project_percent_done', capabilities.contract_name
       assert_equal '1.0', capabilities.contract_version
-      assert_equal '1.3.6', capabilities.plugin_version
-      assert_equal '1.0', capabilities.algorithm_version
+      assert_equal '1.3.12', capabilities.plugin_version
+      assert_equal '1.1', capabilities.algorithm_version
       assert_equal 'live', capabilities.calculation_mode
       assert_equal 'none', capabilities.persistence_mode
       assert_equal 'leaf_issues_only', capabilities.issue_scope
       assert_equal 'treat_as_100', capabilities.closed_issue_mode
+      assert_equal 'none', capabilities.non_progress_status_scope
+      assert_equal [], capabilities.non_progress_status_ids
+      assert_equal 'none', capabilities.non_progress_tracker_scope
+      assert_equal [], capabilities.non_progress_tracker_ids
+      assert capabilities.non_progress_status_ids.frozen?
+      assert capabilities.non_progress_tracker_ids.frozen?
       assert_equal 'use_average_estimate', capabilities.unestimated_issue_mode
       assert_equal true, capabilities.hours_weighted
       assert_equal true, capabilities.supports_raw_percent_done
@@ -44,6 +50,15 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
       assert_equal 1, result.unestimated_eligible_issue_count
       assert_equal 2, result.included_issue_count
       assert_equal 0, result.excluded_parent_issue_count
+      assert_equal 0, result.excluded_non_progress_issue_count
+      assert_equal 0.0, result.excluded_non_progress_estimated_hours
+      assert_equal 0.0, result.excluded_non_progress_applied_weight
+      assert_equal 'none', result.non_progress_status_scope
+      assert_equal [], result.non_progress_status_ids
+      assert_equal 'none', result.non_progress_tracker_scope
+      assert_equal [], result.non_progress_tracker_ids
+      assert_equal [], result.non_progress_status_names
+      assert_equal [], result.non_progress_tracker_names
       assert_equal 0, result.ignored_unestimated_issue_count
       assert_equal 10.0, result.known_estimated_hours
       assert_equal 10.0, result.imputed_weight
@@ -153,6 +168,9 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
 
       refute_includes payload.keys, :included_issue_ids
       refute_includes payload.values, issue
+      assert_includes payload.keys, :non_progress_status_ids
+      assert_includes payload.keys, :non_progress_tracker_scope
+      assert_includes payload.keys, :non_progress_tracker_ids
       assert result.frozen?
       assert result.warnings.frozen?
       assert_raises(FrozenError) { result.warnings << :changed }
@@ -183,6 +201,28 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
       assert capabilities.frozen?
       assert capabilities.supported_period_types.frozen?
     end
+  end
+
+  def test_history_snapshot_result_exposes_settings_snapshot_exclusions
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    snapshot = create_history_snapshot(Date.new(2026, 7, 31), 0, :period_type => 'monthly')
+    snapshot.update!(
+      :calculation_settings => {
+        'non_progress_status_ids' => [dropped.id],
+        'non_progress_tracker_scope' => 'all',
+        'non_progress_tracker_ids' => [test_tracker.id]
+      }
+    )
+
+    result = ProjectPercentDone::PublicApi::V1.latest_official_snapshot(
+      :project => test_project,
+      :period_type => :monthly
+    )
+
+    assert_equal [dropped.id], result.settings_snapshot['non_progress_status_ids']
+    assert_equal 'all', result.settings_snapshot['non_progress_tracker_scope']
+    assert_equal [test_tracker.id], result.settings_snapshot['non_progress_tracker_ids']
+    assert_equal result.calculation_settings, result.settings_snapshot
   end
 
   def test_progress_at_returns_completed_monthly_snapshot

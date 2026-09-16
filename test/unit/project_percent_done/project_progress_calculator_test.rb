@@ -74,6 +74,192 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
     end
   end
 
+  def test_empty_non_progress_settings_keep_existing_behavior
+    create_test_issue(:done_ratio => 100, :estimated_hours => 10)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'non_progress_status_ids' => [],
+      'non_progress_tracker_ids' => []
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 50, result.percent_done
+      assert_equal 2, result.issue_count
+      assert_equal 0, result.excluded_non_progress_issue_count
+      assert_empty result.non_progress_status_ids
+      assert_empty result.non_progress_tracker_ids
+    end
+  end
+
+  def test_excludes_leaf_issue_with_selected_closed_status
+    excluded_status = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:status => excluded_status, :done_ratio => 100, :estimated_hours => 30)
+
+    with_project_percent_done_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [excluded_status.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 0, result.percent_done
+      assert_equal 1, result.issue_count
+      assert_equal 1, result.eligible_issue_count
+      assert_equal 1, result.excluded_non_progress_issue_count
+      assert_equal 30.0, result.excluded_non_progress_estimated_hours
+      assert_equal 30.0, result.excluded_non_progress_applied_weight
+      assert_equal [excluded_status.id], result.non_progress_status_ids
+      assert_equal [excluded_status.name], result.non_progress_status_names
+      assert_includes result.not_included_rows.map(&:reason), :non_progress_status
+    end
+  end
+
+  def test_excludes_leaf_issues_with_multiple_selected_closed_statuses
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    rejected = IssueStatus.create!(:name => "Rejected #{SecureRandom.hex(3)}", :is_closed => true)
+    create_test_issue(:done_ratio => 50, :estimated_hours => 10)
+    create_test_issue(:status => dropped, :done_ratio => 100, :estimated_hours => 10)
+    create_test_issue(:status => rejected, :done_ratio => 100, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [dropped.id.to_s, rejected.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 50, result.percent_done
+      assert_equal 1, result.issue_count
+      assert_equal 2, result.excluded_non_progress_issue_count
+      assert_equal [dropped.id, rejected.id], result.non_progress_status_ids
+    end
+  end
+
+  def test_open_status_exclusion_requires_all_status_scope
+    parked = IssueStatus.create!(:name => "Parked #{SecureRandom.hex(3)}", :is_closed => false)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:status => parked, :done_ratio => 100, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [parked.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 50, result.percent_done
+      assert_equal 0, result.excluded_non_progress_issue_count
+    end
+
+    with_project_percent_done_settings(
+      'non_progress_status_scope' => 'all',
+      'non_progress_status_ids' => [parked.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 0, result.percent_done
+      assert_equal 1, result.excluded_non_progress_issue_count
+      assert_equal [parked.id], result.non_progress_status_ids
+    end
+  end
+
+  def test_excludes_leaf_issue_with_selected_tracker
+    non_progress_tracker = create_tracker("Non-progress #{SecureRandom.hex(3)}")
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:tracker => non_progress_tracker, :done_ratio => 100, :estimated_hours => 20)
+
+    with_project_percent_done_settings(
+      'non_progress_tracker_scope' => 'all',
+      'non_progress_tracker_ids' => [non_progress_tracker.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 0, result.percent_done
+      assert_equal 1, result.issue_count
+      assert_equal 1, result.excluded_non_progress_issue_count
+      assert_equal [non_progress_tracker.id], result.non_progress_tracker_ids
+      assert_equal [non_progress_tracker.name], result.non_progress_tracker_names
+      assert_includes result.not_included_rows.map(&:reason), :non_progress_tracker
+    end
+  end
+
+  def test_tracker_exclusion_requires_tracker_scope
+    non_progress_tracker = create_tracker("Non-progress #{SecureRandom.hex(3)}")
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:tracker => non_progress_tracker, :done_ratio => 100, :estimated_hours => 20)
+
+    with_project_percent_done_settings(
+      'non_progress_tracker_scope' => 'none',
+      'non_progress_tracker_ids' => [non_progress_tracker.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 67, result.percent_done
+      assert_equal 2, result.issue_count
+      assert_equal 0, result.excluded_non_progress_issue_count
+      assert_empty result.non_progress_tracker_ids
+      refute_includes result.not_included_rows.map(&:reason), :non_progress_tracker
+    end
+  end
+
+  def test_excludes_leaf_issues_with_multiple_selected_trackers
+    tracker_a = create_tracker("Admin #{SecureRandom.hex(3)}")
+    tracker_b = create_tracker("Support #{SecureRandom.hex(3)}")
+    create_test_issue(:done_ratio => 25, :estimated_hours => 10)
+    create_test_issue(:tracker => tracker_a, :done_ratio => 100, :estimated_hours => 10)
+    create_test_issue(:tracker => tracker_b, :done_ratio => 100, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'non_progress_tracker_scope' => 'all',
+      'non_progress_tracker_ids' => [tracker_a.id.to_s, tracker_b.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 25, result.percent_done
+      assert_equal 1, result.issue_count
+      assert_equal 2, result.excluded_non_progress_issue_count
+      assert_equal [tracker_a.id, tracker_b.id], result.non_progress_tracker_ids
+    end
+  end
+
+  def test_combined_status_and_tracker_exclusions_count_issue_once
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    non_progress_tracker = create_tracker("Non-progress #{SecureRandom.hex(3)}")
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:status => dropped, :tracker => non_progress_tracker, :done_ratio => 100, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [dropped.id.to_s],
+      'non_progress_tracker_scope' => 'all',
+      'non_progress_tracker_ids' => [non_progress_tracker.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 0, result.percent_done
+      assert_equal 1, result.excluded_non_progress_issue_count
+      assert_equal [:non_progress_status_and_tracker], result.not_included_rows.map(&:reason).uniq
+    end
+  end
+
+  def test_non_progress_status_wins_before_closed_issue_mode
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    create_test_issue(:done_ratio => 0, :estimated_hours => 10)
+    create_test_issue(:status => dropped, :done_ratio => 20, :estimated_hours => 10)
+
+    with_project_percent_done_settings(
+      'closed_issue_mode' => 'treat_as_100',
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [dropped.id.to_s]
+    ) do
+      result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
+
+      assert_equal 0, result.percent_done
+      assert_equal 10.0, result.total_weight
+      assert_equal 1, result.excluded_non_progress_issue_count
+      refute_includes result.included_rows.flat_map(&:notes), :closed_issue_treated_as_100
+    end
+  end
+
   def test_uses_done_ratio_for_closed_issue_when_configured
     create_test_issue(:status => closed_status, :done_ratio => 20, :estimated_hours => 10)
 
@@ -217,5 +403,13 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
       assert_equal 2, result.unestimated_eligible_issue_count
       assert_equal 2, result.ignored_unestimated_issue_count
     end
+  end
+
+  private
+
+  def create_tracker(name)
+    tracker = Tracker.create!(:name => name, :default_status => open_status)
+    test_project.trackers << tracker unless test_project.trackers.exists?(tracker.id)
+    tracker
   end
 end

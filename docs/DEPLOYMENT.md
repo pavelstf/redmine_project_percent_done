@@ -126,3 +126,39 @@ over `1.1.0`; Public API V1 and calculation behavior remain unchanged.
 
 Production was confirmed OK by the user on 2026-07-15. Version `1.1.1` is
 installed and working as expected on both GCR staging and GCR production.
+
+## GCR Production Approval 1.3.12
+
+The GCR packages prepared on 2026-09-16 are:
+
+```text
+redmine_project_percent_done-1.3.12-staging-20260916.zip
+redmine_project_percent_done-1.3.12-production-20260916.zip
+```
+
+Both archives use the root folder:
+
+```text
+redmine_project_percent_done/
+```
+
+Package evidence:
+
+| Environment | SHA-256 | Size |
+|---|---:|---:|
+| staging | `B621DB93624D222EEE91441E01C6EDCF5C1CF1274CAB20852962385EC22EBC47` | `276834` bytes |
+| production | `BA6E998B1A69EB3C8B2C8F7A0B5956A8FCACA238199D49FB22BB9E165B1EE563` | `276834` bytes |
+
+The staging and production packages were built from the same source state, but
+they are separate archives and are not byte-for-byte identical.
+
+Validation:
+
+- Staging was confirmed OK by the user on 2026-09-16.
+- Production was confirmed OK by the user on 2026-09-16.
+- Release state: `production-approved`.
+
+Deployment note: GCR production uses Ruby virtualenv
+`/home/gcrbgcaa/rubyvenv/redmine612build/3.2`. Rails validation commands must
+run from `/home/gcrbgcaa/redmine` with `RAILS_ENV=production`, for example
+`bundle exec rails runner -e production ...`.

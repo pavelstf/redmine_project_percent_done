@@ -4,6 +4,78 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.12] - 2026-09-16
+
+### Added
+
+- Added a `No tracker exclusions` setting mode so tracker-based project
+  progress exclusions can be explicitly disabled.
+- Exposed `non_progress_tracker_scope` in live and historical calculation
+  metadata.
+
+## [1.3.11] - 2026-09-16
+
+### Added
+
+- Added CSV exports for the included and not-included diagnostic issue tables.
+
+### Changed
+
+- Updated diagnostic issue list sections to use the same compact collapsible
+  header pattern as Project Contribution.
+- Added comfortable cell padding to diagnostic issue tables.
+
+## [1.3.10] - 2026-09-16
+
+### Fixed
+
+- Loaded the plugin stylesheet on the calculation details page so diagnostic
+  issue table styling is applied there.
+- Left-aligned the Subject column in the diagnostic issue tables.
+- Replaced the diagnostic table filter label with a plugin-owned locale key.
+
+### Added
+
+- Wrapped the included and not-included diagnostic issue lists in collapsible
+  Redmine-style sections.
+
+## [1.3.9] - 2026-09-16
+
+### Added
+
+- Added local filters for the included and not-included diagnostic issue
+  tables: text search, status dropdown, notes/reason dropdown, quick filters,
+  and visible/total counters.
+
+## [1.3.8] - 2026-09-16
+
+### Fixed
+
+- The non-progress status selector now refreshes its status choices immediately
+  when administrators switch between no exclusions, closed statuses, and all
+  statuses.
+
+### Changed
+
+- Added an explicit "No status exclusions" mode and made it the default status
+  exclusion scope.
+
+## [1.3.7] - 2026-09-16
+
+### Added
+
+- Added non-progress status and tracker settings for excluding direct leaf
+  issues from live project progress numerator and denominator calculations.
+- Added status scope control so administrators can keep the safer closed-status
+  default or intentionally allow all statuses for non-progress exclusions.
+- Stored configured non-progress IDs and audit metadata in new history snapshot
+  settings and exposed the values through the public API and diagnostics.
+
+### Changed
+
+- Bumped the calculation algorithm version to `1.1` because configured
+  exclusions change live and historical calculation semantics.
+
 ## [1.3.6] - 2026-08-13
 
 ### Changed

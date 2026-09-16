@@ -14,6 +14,22 @@ class ProjectPercentDoneSettingsControllerTest < ActionController::TestCase
     assert_response :success
     assert_includes @response.body, I18n.t(:label_project_percent_done_history_settings)
     assert_includes @response.body, I18n.t(:label_project_percent_done_history_diagnostics)
+    assert_includes @response.body, I18n.t(:label_project_percent_done_non_progress_statuses)
+    assert_includes @response.body, I18n.t(:label_project_percent_done_non_progress_trackers)
+    assert_select 'select[name=?]', 'settings[non_progress_status_scope]' do
+      assert_select 'option[value=?][selected]', 'none'
+      assert_select 'option[value=?]', 'closed_only'
+      assert_select 'option[value=?]', 'all'
+    end
+    assert_select 'select[name=?][multiple][disabled]', 'settings[non_progress_status_ids][]'
+    assert_select 'select[name=?]', 'settings[non_progress_tracker_scope]' do
+      assert_select 'option[value=?][selected]', 'none'
+      assert_select 'option[value=?]', 'all'
+    end
+    assert_select 'select[name=?][multiple][disabled]', 'settings[non_progress_tracker_ids][]'
+    assert_includes @response.body, 'refreshStatusSelect'
+    assert_includes @response.body, 'refreshTrackerSelect'
+    assert_includes @response.body, 'data-status-options'
     assert_select 'form.ppd-inline-form', :count => 0
     assert_select 'a.ppd-diagnostic-action[data-method="post"]', :count => 3
   end

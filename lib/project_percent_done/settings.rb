@@ -3,6 +3,8 @@ module ProjectPercentDone
     ALLOWED_VALUES = begin
       values = {
         'issue_scope' => %w[leaf_issues_only],
+        'non_progress_status_scope' => %w[none closed_only all],
+        'non_progress_tracker_scope' => %w[none all],
         'closed_issue_mode' => %w[treat_as_100 use_done_ratio],
         'unestimated_issue_mode' => %w[use_average_estimate use_weight_1 ignore equal_weight_all],
         'rounding_mode' => %w[nearest_integer floor ceil],
@@ -25,6 +27,10 @@ module ProjectPercentDone
       'display_project_tab' => '0',
       'enable_rest_api' => '0',
       'issue_scope' => 'leaf_issues_only',
+      'non_progress_status_scope' => 'none',
+      'non_progress_status_ids' => [],
+      'non_progress_tracker_scope' => 'none',
+      'non_progress_tracker_ids' => [],
       'closed_issue_mode' => 'treat_as_100',
       'unestimated_issue_mode' => 'use_average_estimate',
       'rounding_mode' => 'nearest_integer',
@@ -65,6 +71,10 @@ module ProjectPercentDone
       def form_values(settings)
         supplied = (settings || {}).to_h.stringify_keys
         DEFAULTS.merge(supplied).tap do |values|
+          if !supplied.key?('non_progress_tracker_scope') && array_has_positive_integer?(supplied['non_progress_tracker_ids'])
+            values['non_progress_tracker_scope'] = 'all'
+          end
+
           FORM_BLANK_DEFAULT_KEYS.each do |key|
             values[key] = DEFAULTS[key] if values[key].blank?
           end
@@ -97,6 +107,34 @@ module ProjectPercentDone
 
       def issue_scope
         normalized_value('issue_scope')
+      end
+
+      def non_progress_status_scope
+        normalized_value('non_progress_status_scope')
+      end
+
+      def non_progress_tracker_scope
+        unless raw_settings_has_key?('non_progress_tracker_scope')
+          return 'all' if integer_ids_value('non_progress_tracker_ids').any?
+        end
+
+        normalized_value('non_progress_tracker_scope')
+      end
+
+      def non_progress_status_ids
+        existing_ids_for('non_progress_status_ids', non_progress_status_relation)
+      end
+
+      def non_progress_tracker_ids
+        existing_ids_for('non_progress_tracker_ids', non_progress_tracker_relation)
+      end
+
+      def non_progress_statuses
+        records_by_selected_ids(non_progress_status_relation, non_progress_status_ids)
+      end
+
+      def non_progress_trackers
+        records_by_selected_ids(non_progress_tracker_relation, non_progress_tracker_ids)
       end
 
       def closed_issue_mode
@@ -238,6 +276,12 @@ module ProjectPercentDone
           'closed_issue_mode' => closed_issue_mode,
           'unestimated_issue_mode' => unestimated_issue_mode,
           'rounding_mode' => rounding_mode,
+          'non_progress_status_scope' => non_progress_status_scope,
+          'non_progress_status_ids' => non_progress_status_ids,
+          'non_progress_tracker_scope' => non_progress_tracker_scope,
+          'non_progress_tracker_ids' => non_progress_tracker_ids,
+          'non_progress_statuses' => non_progress_statuses.map { |status| { 'id' => status.id, 'name' => status.name, 'is_closed' => status.is_closed? } },
+          'non_progress_trackers' => non_progress_trackers.map { |tracker| { 'id' => tracker.id, 'name' => tracker.name } },
           'project_start_custom_field_id' => history_project_start_custom_field_id,
           'project_planned_end_custom_field_id' => history_project_planned_end_custom_field_id,
           'plan_calendar_mode' => 'calendar_days_v1'
@@ -275,6 +319,58 @@ module ProjectPercentDone
         integer.between?(minimum, maximum) ? integer : default
       rescue ArgumentError, TypeError
         default
+      end
+
+      def integer_ids_value(key)
+        Array(value(key)).flat_map { |item| item.to_s.split(',') }
+                         .map(&:strip)
+                         .reject(&:blank?)
+                         .map { |item| Integer(item, 10) rescue nil }
+                         .compact
+                         .select(&:positive?)
+                         .uniq
+      end
+
+      def array_has_positive_integer?(value)
+        Array(value).flat_map { |item| item.to_s.split(',') }
+                    .map(&:strip)
+                    .any? { |item| Integer(item, 10).positive? rescue false }
+      end
+
+      def raw_settings_has_key?(key)
+        settings = raw_settings
+        settings.respond_to?(:key?) && (settings.key?(key.to_s) || settings.key?(key.to_sym))
+      end
+
+      def existing_ids_for(key, relation)
+        ids = integer_ids_value(key)
+        return [] if ids.empty? || !relation
+
+        existing = relation.where(:id => ids).pluck(:id)
+        ids & existing
+      end
+
+      def records_by_selected_ids(relation, ids)
+        return [] if ids.empty? || !relation
+
+        records = relation.where(:id => ids).to_a.index_by(&:id)
+        ids.map { |id| records[id] }.compact
+      end
+
+      def non_progress_status_relation
+        return nil unless defined?(IssueStatus)
+        return IssueStatus.none if non_progress_status_scope == 'none'
+
+        scope = IssueStatus
+        scope = scope.where(:is_closed => true) if non_progress_status_scope == 'closed_only'
+        scope
+      end
+
+      def non_progress_tracker_relation
+        return nil unless defined?(Tracker)
+        return Tracker.none if non_progress_tracker_scope == 'none'
+
+        Tracker
       end
 
       def project_date_custom_field(id)

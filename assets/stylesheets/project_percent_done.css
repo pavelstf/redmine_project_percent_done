@@ -114,10 +114,40 @@
 .ppd-issue-history { min-width: 180px; }
 .ppd-issue-history table { margin-top: 6px; min-width: 680px; }
 .ppd-history-purge { border-top: 1px solid #d7d7d7; margin-top: 14px; padding-top: 8px; }
+.ppd-issue-list-section { clear: both; margin-top: 14px; }
+.ppd-issue-list-section h3 { margin-top: 0; }
+.ppd-collapsible-body { overflow-x: auto; }
+.ppd-section-toggle { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; font: inherit; font-weight: 700; gap: 6px; margin: 0; padding: 0; }
+.ppd-section-toggle:hover, .ppd-section-toggle:focus { color: #169; }
+.ppd-section-toggle-icon { border: 1px solid #b7b7b7; border-radius: 3px; display: inline-block; font-family: monospace; font-size: 13px; line-height: 15px; min-width: 15px; padding: 3px 5px; text-align: center; }
+.ppd-table-filter { align-items: end; display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 8px 0 10px; }
+.ppd-table-filter label { display: flex; flex-direction: column; font-weight: 600; gap: 3px; margin: 0; }
+.ppd-table-filter input[type="search"] { min-width: 240px; }
+.ppd-table-filter select { max-width: 280px; }
+.ppd-filter-chips { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; }
+.ppd-filter-chip { background: #fff; border: 1px solid #b8c2cc; border-radius: 3px; color: #344054; cursor: pointer; font-size: 12px; line-height: 1.2; min-height: 26px; padding: 4px 8px; }
+.ppd-filter-chip:hover, .ppd-filter-chip:focus { background-color: #eaf3fb; border-color: #7aa7cc; color: #185b93; }
+.ppd-filter-chip-active { background: #e4f0fb; border-color: #5f9dcc; color: #174f80; font-weight: 600; }
+.ppd-filter-count { color: #667085; font-size: 12px; margin-left: auto; padding: 5px 0; white-space: nowrap; }
+table.list.issues.ppd-issue-table th,
+table.list.issues.ppd-issue-table td {
+  line-height: 1.3;
+  padding: 5px 8px;
+  vertical-align: middle;
+}
+table.list.issues.ppd-issue-table th.ppd-issue-subject,
+table.list.issues.ppd-issue-table td.ppd-issue-subject,
+table.list.issues.ppd-issue-table td.ppd-issue-subject a {
+  text-align: left !important;
+}
+table.list.issues.ppd-issue-table td.ppd-issue-subject a { display: inline; }
 
 @media screen and (max-width: 899px) {
   .ppd-history { overflow-x: auto; }
   .ppd-history-chart { min-width: 620px; }
   .ppd-history-controls { min-width: 620px; }
   .ppd-history-table { min-width: 980px; }
+  .ppd-table-filter { align-items: stretch; flex-direction: column; }
+  .ppd-table-filter input[type="search"], .ppd-table-filter select { box-sizing: border-box; max-width: none; width: 100%; }
+  .ppd-filter-count { margin-left: 0; }
 }

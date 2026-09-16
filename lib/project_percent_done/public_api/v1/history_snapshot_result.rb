@@ -6,7 +6,7 @@ module ProjectPercentDone
           project_id period_type period_end captured_at project_state
           progress_available unavailable_reason display_percent_done raw_percent_done
           estimate_coverage_percent warnings snapshot_source timing deviation_seconds
-          algorithm_version plugin_version calculation_settings all_project_issue_count
+          algorithm_version plugin_version calculation_settings settings_snapshot all_project_issue_count
           eligible_issue_count included_issue_count not_included_issue_count
           estimated_issue_count unestimated_issue_count estimated_eligible_issue_count
           unestimated_eligible_issue_count excluded_parent_issue_count
@@ -35,6 +35,7 @@ module ProjectPercentDone
             :algorithm_version => snapshot.algorithm_version,
             :plugin_version => snapshot.plugin_version,
             :calculation_settings => snapshot.calculation_settings,
+            :settings_snapshot => snapshot.calculation_settings,
             :all_project_issue_count => snapshot.all_project_issue_count,
             :eligible_issue_count => snapshot.eligible_issue_count,
             :included_issue_count => snapshot.included_issue_count,
@@ -70,6 +71,7 @@ module ProjectPercentDone
             :algorithm_version => ProjectPercentDone::ALGORITHM_VERSION,
             :plugin_version => ProjectPercentDone::PLUGIN_VERSION,
             :calculation_settings => {},
+            :settings_snapshot => {},
             :all_project_issue_count => nil,
             :eligible_issue_count => nil,
             :included_issue_count => nil,

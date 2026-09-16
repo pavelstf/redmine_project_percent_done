@@ -102,6 +102,46 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
     end
   end
 
+  def test_snapshot_uses_and_stores_non_progress_exclusions
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+    dropped_issue = create_test_issue(:status => dropped, :done_ratio => 100, :estimated_hours => 30)
+
+    with_history_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [dropped.id.to_s]
+    ) do
+      collect_at(2026, 7, 14, 0, 15)
+      snapshot = latest_project_snapshot
+      settings = snapshot.calculation_settings
+
+      assert_equal 50, snapshot.display_percent_done
+      assert_equal [dropped.id], settings['non_progress_status_ids']
+      assert_equal 'none', settings['non_progress_tracker_scope']
+      assert_equal [], settings['non_progress_tracker_ids']
+      assert_equal [
+        { 'id' => dropped.id, 'name' => dropped.name, 'is_closed' => true }
+      ], settings['non_progress_statuses']
+      assert_equal 2, snapshot.issue_snapshots.count
+      assert_equal 'non_progress_status', snapshot.issue_snapshots.find_by!(:issue_id => dropped_issue.id).exclusion_reason
+    end
+  end
+
+  def test_existing_snapshot_keeps_original_exclusion_settings_after_settings_change
+    dropped = IssueStatus.create!(:name => "Dropped #{SecureRandom.hex(3)}", :is_closed => true)
+
+    with_history_settings(
+      'non_progress_status_scope' => 'closed_only',
+      'non_progress_status_ids' => [dropped.id.to_s]
+    ) do
+      collect_at(2026, 7, 14, 0, 15)
+    end
+
+    snapshot = latest_project_snapshot
+    with_history_settings('non_progress_status_ids' => []) do
+      assert_equal [dropped.id], snapshot.reload.calculation_settings['non_progress_status_ids']
+    end
+  end
+
   def test_weekly_and_monthly_official_snapshots_can_share_period_end
     with_history_settings do
       result = collect_at(2026, 6, 1, 0, 15)
@@ -153,5 +193,9 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
   def collect_at(year, month, day, hour, minute)
     now = Time.zone.local(year, month, day, hour, minute)
     ProjectPercentDone::History::SnapshotCollector.new(:now => now, :source => 'test').call
+  end
+
+  def latest_project_snapshot
+    ProjectPercentDoneSnapshot.where(:project_id => test_project.id).latest_first.first!
   end
 end

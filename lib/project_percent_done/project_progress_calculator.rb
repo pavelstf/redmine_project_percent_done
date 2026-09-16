@@ -10,14 +10,18 @@ module ProjectPercentDone
     def call
       all_issues = project_issues
       all_issue_ids = all_issues.map(&:id)
-      candidate_issues = calculation_candidates(all_issues)
+      scoped_candidate_issues = calculation_candidates(all_issues)
+      excluded_non_progress_issues = scoped_candidate_issues.select { |issue| non_progress_issue?(issue) }
+      candidate_issues = scoped_candidate_issues.reject { |issue| non_progress_issue?(issue) }
       candidate_estimated_issues = candidate_issues.select { |issue| estimated?(issue) }
       candidate_unestimated_issues = candidate_issues.reject { |issue| estimated?(issue) }
       aggregate_fields = aggregate_fields_for(
         all_issues,
+        scoped_candidate_issues,
         candidate_issues,
         candidate_estimated_issues,
-        candidate_unestimated_issues
+        candidate_unestimated_issues,
+        excluded_non_progress_issues
       )
 
       if candidate_issues.empty?
@@ -36,6 +40,8 @@ module ProjectPercentDone
       estimated_issue_count = estimated_issues.size
       unestimated_issue_count = included_issues.size - estimated_issue_count
       average_estimate = average_estimate_for(estimated_issues)
+      aggregate_fields[:excluded_non_progress_applied_weight] =
+        excluded_non_progress_issues.sum { |issue| diagnostic_weight_for(issue, average_estimate) }
 
       weighted_sum = 0.0
       total_weight = 0.0
@@ -94,7 +100,7 @@ module ProjectPercentDone
         scope.includes(:status).to_a
       else
         scope.includes(:status)
-             .select(:id, :project_id, :parent_id, :status_id, :done_ratio, :estimated_hours)
+             .select(:id, :project_id, :parent_id, :tracker_id, :status_id, :done_ratio, :estimated_hours)
              .to_a
       end
     end
@@ -171,6 +177,10 @@ module ProjectPercentDone
       weight_for(issue, average_estimate)
     end
 
+    def diagnostic_weight_for(issue, average_estimate)
+      weight_for(issue, average_estimate).to_f
+    end
+
     def breakdown_rows_for(issues, included, average_estimate)
       issues.map do |issue|
         applied_weight = included ? weight_for(issue, average_estimate).to_f : 0.0
@@ -192,6 +202,9 @@ module ProjectPercentDone
 
     def not_included_reason(issue)
       return :parent_issue_excluded if ProjectPercentDone::Settings.issue_scope == 'leaf_issues_only' && parent_issue_in_project?(issue)
+      return :non_progress_status_and_tracker if excluded_by_non_progress_status?(issue) && excluded_by_non_progress_tracker?(issue)
+      return :non_progress_status if excluded_by_non_progress_status?(issue)
+      return :non_progress_tracker if excluded_by_non_progress_tracker?(issue)
       return :unestimated_issue_ignored if ProjectPercentDone::Settings.unestimated_issue_mode == 'ignore' && !estimated?(issue)
 
       :not_in_calculation_scope
@@ -199,6 +212,26 @@ module ProjectPercentDone
 
     def parent_issue_in_project?(issue)
       Array(@parent_issue_ids).include?(issue.id)
+    end
+
+    def non_progress_issue?(issue)
+      excluded_by_non_progress_status?(issue) || excluded_by_non_progress_tracker?(issue)
+    end
+
+    def excluded_by_non_progress_status?(issue)
+      non_progress_status_ids.include?(issue.status_id.to_i)
+    end
+
+    def excluded_by_non_progress_tracker?(issue)
+      non_progress_tracker_ids.include?(issue.tracker_id.to_i)
+    end
+
+    def non_progress_status_ids
+      @non_progress_status_ids ||= ProjectPercentDone::Settings.non_progress_status_ids
+    end
+
+    def non_progress_tracker_ids
+      @non_progress_tracker_ids ||= ProjectPercentDone::Settings.non_progress_tracker_ids
     end
 
     def notes_for(issue, included, applied_weight, average_estimate)
@@ -232,7 +265,7 @@ module ProjectPercentDone
       warnings
     end
 
-    def aggregate_fields_for(all_issues, eligible_issues, estimated_eligible_issues, unestimated_eligible_issues)
+    def aggregate_fields_for(all_issues, scoped_candidate_issues, eligible_issues, estimated_eligible_issues, unestimated_eligible_issues, excluded_non_progress_issues)
       eligible_count = eligible_issues.size
       {
         :all_project_issue_count => all_issues.size,
@@ -240,7 +273,14 @@ module ProjectPercentDone
         :estimated_eligible_issue_count => estimated_eligible_issues.size,
         :unestimated_eligible_issue_count => unestimated_eligible_issues.size,
         :included_issue_count => 0,
-        :excluded_parent_issue_count => all_issues.size - eligible_count,
+        :excluded_parent_issue_count => all_issues.size - scoped_candidate_issues.size,
+        :excluded_non_progress_issue_count => excluded_non_progress_issues.size,
+        :excluded_non_progress_estimated_hours => excluded_non_progress_issues.select { |issue| estimated?(issue) }.sum { |issue| issue.estimated_hours.to_f },
+        :excluded_non_progress_applied_weight => excluded_non_progress_issues.select { |issue| estimated?(issue) }.sum { |issue| issue.estimated_hours.to_f },
+        :non_progress_status_ids => non_progress_status_ids,
+        :non_progress_tracker_ids => non_progress_tracker_ids,
+        :non_progress_status_names => ProjectPercentDone::Settings.non_progress_statuses.map(&:name),
+        :non_progress_tracker_names => ProjectPercentDone::Settings.non_progress_trackers.map(&:name),
         :ignored_unestimated_issue_count => ProjectPercentDone::Settings.unestimated_issue_mode == 'ignore' ? unestimated_eligible_issues.size : 0,
         :known_estimated_hours => 0.0,
         :imputed_weight => 0.0,

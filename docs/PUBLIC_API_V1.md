@@ -13,10 +13,10 @@ persistence. Historical methods read official snapshots captured by this plugin.
 
 | Version | Value |
 |---|---|
-| Plugin release | `1.3.6` |
+| Plugin release | `1.3.12` |
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
-| Calculation algorithm | `1.0` |
+| Calculation algorithm | `1.1` |
 
 The algorithm version identifies calculation semantics independently from the
 plugin release. Fields may be added compatibly to V1, but breaking a field's
@@ -43,6 +43,10 @@ capabilities = ProjectPercentDone::PublicApi::V1.capabilities
 - `calculation_mode`
 - `persistence_mode`
 - `issue_scope`
+- `non_progress_status_scope`
+- `non_progress_status_ids`
+- `non_progress_tracker_scope`
+- `non_progress_tracker_ids`
 - `closed_issue_mode`
 - `unestimated_issue_mode`
 - `hours_weighted`
@@ -75,6 +79,15 @@ estimated_eligible_issue_count
 unestimated_eligible_issue_count
 included_issue_count
 excluded_parent_issue_count
+excluded_non_progress_issue_count
+excluded_non_progress_estimated_hours
+excluded_non_progress_applied_weight
+non_progress_status_scope
+non_progress_status_ids
+non_progress_tracker_scope
+non_progress_tracker_ids
+non_progress_status_names
+non_progress_tracker_names
 ignored_unestimated_issue_count
 known_estimated_hours
 imputed_weight
@@ -97,7 +110,9 @@ both percentage values are `nil`; `unavailable_reason` is
 All issue counts are for issues belonging directly to the project.
 
 - Eligible counts are measured after leaf-scope parent exclusion and before
-  missing-estimate handling.
+  non-progress status/tracker exclusion and missing-estimate handling.
+- `excluded_non_progress_issue_count` counts each excluded direct leaf issue
+  once, even when both status and tracker match.
 - Positive `estimated_hours` is estimated; missing, zero, or negative is
   unestimated.
 - Included issues have a positive applied weight.
@@ -201,6 +216,7 @@ deviation_seconds
 algorithm_version
 plugin_version
 calculation_settings
+settings_snapshot
 all_project_issue_count
 eligible_issue_count
 included_issue_count
@@ -215,6 +231,12 @@ known_estimated_hours
 total_weight
 imputed_weight
 ```
+
+`settings_snapshot` is an alias for `calculation_settings`. New snapshots store
+the configured `non_progress_status_ids`, `non_progress_tracker_scope`, and
+`non_progress_tracker_ids`, plus status/tracker display metadata for audit after
+future renames. Existing
+snapshots are read as stored and are not rewritten when settings change.
 
 A valid historical `0%` has `progress_available == true`. Missing progress is
 represented by an immutable unavailable result object, not by raising an

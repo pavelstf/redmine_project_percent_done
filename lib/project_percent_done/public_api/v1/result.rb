@@ -6,6 +6,9 @@ module ProjectPercentDone
           progress_available unavailable_reason raw_percent_done display_percent_done
           all_project_issue_count eligible_issue_count estimated_eligible_issue_count
           unestimated_eligible_issue_count included_issue_count excluded_parent_issue_count
+          excluded_non_progress_issue_count excluded_non_progress_estimated_hours
+          excluded_non_progress_applied_weight non_progress_status_scope non_progress_status_ids
+          non_progress_tracker_scope non_progress_tracker_ids non_progress_status_names non_progress_tracker_names
           ignored_unestimated_issue_count known_estimated_hours imputed_weight
           total_applied_weight estimate_coverage_percent known_weight_percent issue_scope
           closed_issue_mode unestimated_issue_mode hours_weighted warnings

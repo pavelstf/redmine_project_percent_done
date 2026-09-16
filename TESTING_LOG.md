@@ -1,5 +1,48 @@
 # Testing Log
 
+## 2026-09-16 - 1.3.12 Non-Progress Tracker Scope
+
+- Added an explicit `No tracker exclusions` / `All trackers` setting for
+  tracker-based non-progress exclusions.
+- Preserved legacy behavior for existing saved tracker IDs that predate the new
+  tracker scope setting: if tracker IDs exist and no tracker scope key is stored,
+  the effective scope remains `all`.
+- Exposed `non_progress_tracker_scope` in live API metadata and historical
+  settings snapshots.
+- Prepared packages:
+  - staging: `redmine_project_percent_done-1.3.12-staging-20260916.zip`
+    - SHA-256: `B621DB93624D222EEE91441E01C6EDCF5C1CF1274CAB20852962385EC22EBC47`
+    - size: `276834` bytes
+  - production: `redmine_project_percent_done-1.3.12-production-20260916.zip`
+    - SHA-256: `BA6E998B1A69EB3C8B2C8F7A0B5956A8FCACA238199D49FB22BB9E165B1EE563`
+    - size: `276834` bytes
+  - archive root: `redmine_project_percent_done/`
+  - packages were built from the same source state but are not byte-for-byte
+    identical because they were created as separate staging/production archives.
+- Local validation:
+  - syntax checks for touched Ruby tests and code: passed;
+  - locale YAML parse checks: passed;
+  - ERB compile checks for touched views: passed;
+  - focused settings test: `9 runs`, `49 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused calculator test: `24 runs`, `96 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused Public API test: `16 runs`, `128 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused history snapshot collector test: `10 runs`, `44 assertions`,
+    `0 failures`, `0 errors`, `0 skips`;
+  - focused settings controller test after applying plugin migrations in the
+    shared test DB: `7 runs`, `60 assertions`, `0 failures`, `0 errors`,
+    `0 skips`;
+  - focused controller test: `12 runs`, `97 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - full Redmine 6.1.2 plugin suite passed:
+    `133 runs`, `718 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Staging was confirmed OK by the user on 2026-09-16 after installing
+  `1.3.12`.
+- Production was confirmed OK by the user on 2026-09-16 after installing
+  `1.3.12`; release state is `production-approved`.
+
 ## 2026-08-13 - 1.3.6 Dashboard Snapshot Freshness Refinement
 
 - Replaced the single dashboard "last snapshot" line with separated freshness
