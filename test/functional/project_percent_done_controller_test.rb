@@ -1,4 +1,5 @@
 require File.expand_path('../test_helper', __dir__)
+require 'csv'
 
 class ProjectPercentDoneControllerTest < ActionController::TestCase
   include ProjectPercentDoneTestSupport
@@ -108,13 +109,15 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_response :success
       assert_select 'div.box.ppd-issue-list-section.ppd-collapsible-section', :count => 2
       assert_select 'div.ppd-issue-list-section[data-ppd-section="included"]' do
-        assert_select 'a.icon.icon-save[href*=".csv"][href*="table=included"]', :text => 'CSV'
+        assert_select 'a.icon.icon-save[href*=".csv"][href*="table=included"][data-ppd-csv-link][data-ppd-csv-base]',
+                      :text => 'CSV'
         assert_select 'button.ppd-section-toggle[data-ppd-toggle-section="included"][aria-expanded="false"]',
                       :text => /#{Regexp.escape(I18n.t(:label_project_percent_done_included_issues))}/
         assert_select 'div.ppd-collapsible-body[data-ppd-section-body="included"][hidden]'
       end
       assert_select 'div.ppd-issue-list-section[data-ppd-section="not-included"]' do
-        assert_select 'a.icon.icon-save[href*=".csv"][href*="table=not_included"]', :text => 'CSV'
+        assert_select 'a.icon.icon-save[href*=".csv"][href*="table=not_included"][data-ppd-csv-link][data-ppd-csv-base]',
+                      :text => 'CSV'
         assert_select 'button.ppd-section-toggle[data-ppd-toggle-section="not-included"][aria-expanded="false"]',
                       :text => /#{Regexp.escape(I18n.t(:label_project_percent_done_not_included_issues))}/
         assert_select 'div.ppd-collapsible-body[data-ppd-section-body="not-included"][hidden]'
@@ -148,6 +151,7 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
         assert_select 'tr[data-ppd-filter-row][data-ppd-quick="parent_issue_excluded"]'
       end
       assert_includes @response.body, 'refreshFilter'
+      assert_includes @response.body, 'updateCsvLink'
       assert_includes @response.body, 'setSectionExpanded'
       assert_includes @response.body, I18n.t(:text_project_percent_done_filter_placeholder)
     end
@@ -168,6 +172,44 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
     end
   end
 
+  def test_calculation_details_csv_filters_included_rows_and_names_file_with_filters
+    create_test_issue(:subject => 'Estimated CSV task', :done_ratio => 50, :estimated_hours => 10)
+    create_test_issue(:subject => 'Unestimated needle CSV task', :done_ratio => 20, :estimated_hours => nil)
+    create_test_issue(:subject => 'Unestimated other CSV task', :done_ratio => 30, :estimated_hours => nil)
+
+    with_project_percent_done_settings('display_project_tab' => '1') do
+      get :show, :params => {
+        :project_id => test_project.identifier,
+        :format => 'csv',
+        :table => 'included',
+        :filter_quick => 'unestimated',
+        :filter_search => 'needle'
+      }
+
+      assert_response :success
+      assert_match(
+        /project-percent-done-#{Regexp.escape(test_project.identifier)}-included-unestimated-search-needle-\d{4}-\d{2}-\d{2}\.csv/,
+        @response.headers['Content-Disposition']
+      )
+      rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
+      subjects = rows.drop(1).map { |row| row.fetch(1) }
+      assert_equal ['Unestimated needle CSV task'], subjects
+    end
+  end
+
+  def test_calculation_details_csv_escapes_formula_like_included_subjects
+    create_test_issue(:subject => '=HYPERLINK("http://example.test")', :done_ratio => 50, :estimated_hours => 10)
+
+    with_project_percent_done_settings('display_project_tab' => '1') do
+      get :show, :params => { :project_id => test_project.identifier, :format => 'csv', :table => 'included' }
+
+      assert_response :success
+      rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
+      assert_includes rows.flatten, "'=HYPERLINK(\"http://example.test\")"
+      refute_includes rows.flatten, '=HYPERLINK("http://example.test")'
+    end
+  end
+
   def test_calculation_details_csv_exports_visible_not_included_issue_rows
     parent = create_test_issue(:subject => 'Parent CSV task', :done_ratio => 100, :estimated_hours => 20)
     create_test_issue(:subject => 'Child CSV task', :parent_issue_id => parent.id, :done_ratio => 50, :estimated_hours => 10)
@@ -180,6 +222,45 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_includes @response.body, I18n.t(:label_project_percent_done_reason)
       assert_includes @response.body, 'Parent CSV task'
       assert_includes @response.body, I18n.t(:label_project_percent_done_reason_parent_issue_excluded)
+    end
+  end
+
+  def test_calculation_details_csv_filters_not_included_rows_and_names_file_with_filters
+    parent = create_test_issue(:subject => 'Parent filtered CSV task', :done_ratio => 100, :estimated_hours => 20)
+    create_test_issue(:subject => 'Child CSV task', :parent_issue_id => parent.id, :done_ratio => 50, :estimated_hours => 10)
+    create_test_issue(:subject => 'Other included CSV task', :done_ratio => 30, :estimated_hours => 4)
+
+    with_project_percent_done_settings('display_project_tab' => '1') do
+      get :show, :params => {
+        :project_id => test_project.identifier,
+        :format => 'csv',
+        :table => 'not_included',
+        :filter_quick => 'parent_issue_excluded',
+        :filter_secondary => 'parent_issue_excluded'
+      }
+
+      assert_response :success
+      assert_match(
+        /project-percent-done-#{Regexp.escape(test_project.identifier)}-not_included-parent-issue-excluded-filter-parent-issue-excluded-\d{4}-\d{2}-\d{2}\.csv/,
+        @response.headers['Content-Disposition']
+      )
+      rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
+      subjects = rows.drop(1).map { |row| row.fetch(1) }
+      assert_equal ['Parent filtered CSV task'], subjects
+    end
+  end
+
+  def test_calculation_details_csv_escapes_formula_like_not_included_subjects
+    parent = create_test_issue(:subject => '@SUM(1,2)', :done_ratio => 100, :estimated_hours => 20)
+    create_test_issue(:subject => 'Child CSV task', :parent_issue_id => parent.id, :done_ratio => 50, :estimated_hours => 10)
+
+    with_project_percent_done_settings('display_project_tab' => '1') do
+      get :show, :params => { :project_id => test_project.identifier, :format => 'csv', :table => 'not_included' }
+
+      assert_response :success
+      rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
+      assert_includes rows.flatten, "'@SUM(1,2)"
+      refute_includes rows.flatten, '@SUM(1,2)'
     end
   end
 

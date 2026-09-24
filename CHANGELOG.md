@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.15] - 2026-09-24
+
+### Security
+
+- Escaped formula-like string values in diagnostic CSV exports by prefixing
+  fields that begin with `=`, `+`, `-`, or `@`.
+
+### Changed
+
+- Diagnostic CSV exports now follow the active table filters and include
+  sanitized filter suffixes in downloaded filenames.
+
 ## [1.3.14] - 2026-09-24
 
 ### Changed

@@ -105,13 +105,39 @@ class ProjectPercentDoneController < ApplicationController
 
   def utf8_csv(rows)
     "\uFEFF" + CSV.generate do |csv|
-      rows.each { |row| csv << row }
+      rows.each { |row| csv << row.map { |value| csv_safe_value(value) } }
     end
+  end
+
+  def csv_safe_value(value)
+    return value unless value.is_a?(String)
+    return value unless value.match?(/\A[=+\-@]/)
+
+    "'#{value}"
   end
 
   def csv_filename(table)
     project_part = @project.identifier.presence || @project.id
-    "project-percent-done-#{project_part}-#{table}-#{Date.current}.csv"
+    filename_parts = ['project-percent-done', project_part, table]
+    filter_part = csv_filename_filter_part
+    filename_parts << filter_part if filter_part.present?
+    filename_parts << Date.current
+    "#{filename_parts.join('-')}.csv"
+  end
+
+  def csv_filename_filter_part
+    parts = []
+    parts << csv_slug(csv_filter_quick) if csv_filter_quick.present?
+    parts << "status-#{csv_slug(csv_filter_status)}" if csv_filter_status.present?
+    parts << "filter-#{csv_slug(csv_filter_secondary)}" if csv_filter_secondary.present?
+    parts << "search-#{csv_slug(csv_filter_search, 32)}" if csv_filter_search.present?
+    parts.presence&.join('-')
+  end
+
+  def csv_slug(value, limit = nil)
+    slug = value.to_s.downcase.gsub(/[^a-z0-9]+/, '-').gsub(/\A-|-+\z/, '')
+    slug = slug.first(limit).gsub(/-+\z/, '') if limit && slug.present?
+    slug.presence || 'filtered'
   end
 
   def included_csv_rows
@@ -127,7 +153,7 @@ class ProjectPercentDoneController < ApplicationController
       l(:label_project_percent_done_notes)
     ]]
 
-    visible_rows(@result.included_rows).each do |row|
+    filtered_included_rows.each do |row|
       rows << [
         row.issue_id,
         row.subject,
@@ -137,7 +163,7 @@ class ProjectPercentDoneController < ApplicationController
         csv_decimal(row.estimated_hours),
         csv_decimal(row.applied_weight),
         csv_decimal(row.weighted_value),
-        row.notes.map { |note| l(:"label_project_percent_done_note_#{note}") }.join(', ')
+        included_note_labels(row).join(', ')
       ]
     end
 
@@ -154,14 +180,14 @@ class ProjectPercentDoneController < ApplicationController
       l(:label_project_percent_done_reason)
     ]]
 
-    visible_rows(@result.not_included_rows).each do |row|
+    filtered_not_included_rows.each do |row|
       rows << [
         row.issue_id,
         row.subject,
         row.status_name,
         csv_percent(row.original_done_ratio),
         csv_decimal(row.estimated_hours),
-        l(:"label_project_percent_done_reason_#{row.reason}")
+        not_included_reason_label(row)
       ]
     end
 
@@ -170,6 +196,113 @@ class ProjectPercentDoneController < ApplicationController
 
   def visible_rows(rows)
     rows.select { |row| row.issue.visible? }
+  end
+
+  def filtered_included_rows
+    visible_rows(@result.included_rows).select do |row|
+      csv_matches_search?(included_search_text(row)) &&
+        csv_matches_status?(row.status_name) &&
+        csv_matches_secondary?(row.notes.map(&:to_s)) &&
+        csv_matches_quick?(included_quick_filter_keys(row))
+    end
+  end
+
+  def filtered_not_included_rows
+    visible_rows(@result.not_included_rows).select do |row|
+      csv_matches_search?(not_included_search_text(row)) &&
+        csv_matches_status?(row.status_name) &&
+        csv_matches_secondary?([row.reason.to_s]) &&
+        csv_matches_quick?(not_included_quick_filter_keys(row))
+    end
+  end
+
+  def included_search_text(row)
+    [
+      row.issue_id,
+      row.subject,
+      row.status_name,
+      row.original_done_ratio,
+      row.effective_done_ratio,
+      row.estimated_hours,
+      row.applied_weight,
+      row.weighted_value,
+      included_note_labels(row).join(' ')
+    ].join(' ')
+  end
+
+  def not_included_search_text(row)
+    [
+      row.issue_id,
+      row.subject,
+      row.status_name,
+      row.original_done_ratio,
+      row.estimated_hours,
+      not_included_reason_label(row)
+    ].join(' ')
+  end
+
+  def included_note_labels(row)
+    row.notes.map { |note| l(:"label_project_percent_done_note_#{note}") }
+  end
+
+  def not_included_reason_label(row)
+    l(:"label_project_percent_done_reason_#{row.reason}")
+  end
+
+  def csv_matches_search?(value)
+    search = csv_filter_search
+    search.blank? || value.to_s.downcase.include?(search.downcase)
+  end
+
+  def csv_matches_status?(value)
+    status = csv_filter_status
+    status.blank? || value.to_s == status
+  end
+
+  def csv_matches_secondary?(values)
+    secondary = csv_filter_secondary
+    secondary.blank? || values.include?(secondary)
+  end
+
+  def csv_matches_quick?(values)
+    quick = csv_filter_quick
+    quick.blank? || values.include?(quick)
+  end
+
+  def included_quick_filter_keys(row)
+    keys = []
+    keys << 'closed_as_100' if row.notes.map(&:to_s).include?('closed_issue_treated_as_100')
+    keys << 'has_notes' if row.notes.any?
+    keys << 'estimated' if row.estimated_hours.present?
+    keys << 'unestimated' if row.estimated_hours.blank?
+    keys << (row.effective_done_ratio.to_f >= 100.0 ? 'complete' : 'incomplete')
+    keys
+  end
+
+  def not_included_quick_filter_keys(row)
+    reason = row.reason.to_s
+    keys = [reason]
+    if reason == 'non_progress_status_and_tracker'
+      keys << 'non_progress_status'
+      keys << 'non_progress_tracker'
+    end
+    keys
+  end
+
+  def csv_filter_search
+    params[:filter_search].to_s.strip
+  end
+
+  def csv_filter_status
+    params[:filter_status].to_s.strip
+  end
+
+  def csv_filter_secondary
+    params[:filter_secondary].to_s.strip
+  end
+
+  def csv_filter_quick
+    params[:filter_quick].to_s.strip
   end
 
   def csv_decimal(value)

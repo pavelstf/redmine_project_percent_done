@@ -1,5 +1,47 @@
 # Testing Log
 
+## 2026-09-24 - 1.3.15 CSV Formula Hardening
+
+- Escaped formula-like string values in included and not-included diagnostic
+  CSV exports by prefixing values that begin with `=`, `+`, `-`, or `@`.
+- Updated included and not-included diagnostic CSV exports to follow the active
+  table filters and include sanitized filter suffixes in downloaded filenames.
+- Bumped plugin version to `1.3.15`; calculation algorithm and public API
+  contract versions remain unchanged.
+- Added functional regressions for formula-like `Subject` values in both CSV
+  export tables.
+- Added functional regressions for filtered CSV row sets and filtered CSV
+  filenames in both diagnostic export tables.
+- Local validation:
+  - focused controller test:
+    `16 runs`, `119 assertions`, `0 failures`, `0 errors`, `0 skips`.
+  - focused Public API V1 test:
+    `16 runs`, `128 assertions`, `0 failures`, `0 errors`, `0 skips`.
+  - full Redmine 6.1.2 plugin suite:
+    `140 runs`, `757 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Prepared staging package:
+  - `redmine_project_percent_done-1.3.15-staging-20260924.zip`
+  - SHA-256:
+    `340E0401F82299A36852BE856A3B7FA547D022A23FF5AFD7FE51EDF364416F8C`
+  - size: `299417` bytes
+  - archive root: `redmine_project_percent_done/`
+  - package inspection confirmed version `1.3.15` and no `.git`, `.agents`,
+    `.codex`, `tmp`, or `release_packages` entries.
+- Staging was confirmed OK by the user on 2026-09-24.
+- Release state after staging confirmation: `staging-approved`.
+- Prepared production package as a byte-for-byte copy of the approved staging
+  package:
+  - `redmine_project_percent_done-1.3.15-production-20260924.zip`
+  - SHA-256:
+    `340E0401F82299A36852BE856A3B7FA547D022A23FF5AFD7FE51EDF364416F8C`
+  - size: `299417` bytes
+  - byte-for-byte identical to
+    `redmine_project_percent_done-1.3.15-staging-20260924.zip`.
+  - release state after production package preparation: `packaged-production`.
+- Production was confirmed OK by the user on 2026-09-24 after manual checks
+  and production log review.
+- Final release state: `production-approved`.
+
 ## 2026-09-24 - 1.3.14 Diagnostic UI Polish
 
 - Restyled calculation detail quick filters to follow the Project Risk

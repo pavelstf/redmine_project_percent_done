@@ -16,9 +16,9 @@
 <% hidden_not_included_count = project_percent_done_hidden_row_count(@result.not_included_rows) %>
 <% total_weighted_value = @result.included_rows.sum(&:weighted_value) %>
 <% included_status_options = visible_included_rows.map(&:status_name).compact.uniq.sort %>
-<% included_note_options = visible_included_rows.flat_map { |row| row.notes.map { |note| project_percent_done_breakdown_note_label(note) } }.compact.uniq.sort %>
+<% included_note_options = visible_included_rows.flat_map(&:notes).map(&:to_s).compact.uniq.sort %>
 <% not_included_status_options = visible_not_included_rows.map(&:status_name).compact.uniq.sort %>
-<% not_included_reason_options = visible_not_included_rows.map { |row| project_percent_done_breakdown_reason_label(row.reason) }.compact.uniq.sort %>
+<% not_included_reason_options = visible_not_included_rows.map { |row| row.reason.to_s }.compact.uniq.sort %>
 <% included_quick_filter_keys = lambda do |row|
      note_labels = row.notes.map { |note| project_percent_done_breakdown_note_label(note) }
      keys = []
@@ -140,7 +140,7 @@
 
 <div class="box ppd-issue-list-section ppd-collapsible-section" data-ppd-section="included">
   <div class="contextual">
-    <%= link_to 'CSV', project_percent_done_path(:project_id => @project, :format => :csv, :table => 'included'), :class => 'icon icon-save', :title => l(:tooltip_project_percent_done_csv_included) %>
+    <%= link_to 'CSV', project_percent_done_path(:project_id => @project, :format => :csv, :table => 'included'), :class => 'icon icon-save', :title => l(:tooltip_project_percent_done_csv_included), :'data-ppd-csv-link' => 'included', :'data-ppd-csv-base' => project_percent_done_path(:project_id => @project, :format => :csv, :table => 'included') %>
   </div>
   <h3><button type="button" class="ppd-section-toggle" data-ppd-toggle-section="included" aria-expanded="false"><span class="ppd-section-toggle-icon" aria-hidden="true">+</span><%= l(:label_project_percent_done_included_issues) %></button></h3>
   <div class="ppd-collapsible-body" data-ppd-section-body="included" hidden>
@@ -169,7 +169,7 @@
         <select data-ppd-filter-secondary>
           <option value=""><%= l(:label_project_percent_done_all_notes_filter) %></option>
           <% included_note_options.each do |note| %>
-            <option value="<%= h(note) %>"><%= h(note) %></option>
+            <option value="<%= h(note) %>"><%= project_percent_done_breakdown_note_label(note) %></option>
           <% end %>
         </select>
       </label>
@@ -207,7 +207,7 @@
           data-ppd-filter-row="true"
           data-ppd-search="<%= h([row.issue_id, row.subject, row.status_name, row.original_done_ratio, row.effective_done_ratio, row.estimated_hours, row.applied_weight, row.weighted_value, note_labels.join(' ')].join(' ')) %>"
           data-ppd-status="<%= h(row.status_name) %>"
-          data-ppd-secondary="<%= h(note_labels.join('|||')) %>"
+          data-ppd-secondary="<%= h(row.notes.map(&:to_s).join('|||')) %>"
           data-ppd-quick="<%= h(quick_filters.join(' ')) %>">
         <td><%= link_to "##{row.issue_id}", issue_path(row.issue) %></td>
         <td class="ppd-issue-subject"><%= link_to h(row.subject), issue_path(row.issue) %></td>
@@ -246,7 +246,7 @@
 
 <div class="box ppd-issue-list-section ppd-collapsible-section" data-ppd-section="not-included">
   <div class="contextual">
-    <%= link_to 'CSV', project_percent_done_path(:project_id => @project, :format => :csv, :table => 'not_included'), :class => 'icon icon-save', :title => l(:tooltip_project_percent_done_csv_not_included) %>
+    <%= link_to 'CSV', project_percent_done_path(:project_id => @project, :format => :csv, :table => 'not_included'), :class => 'icon icon-save', :title => l(:tooltip_project_percent_done_csv_not_included), :'data-ppd-csv-link' => 'not-included', :'data-ppd-csv-base' => project_percent_done_path(:project_id => @project, :format => :csv, :table => 'not_included') %>
   </div>
   <h3><button type="button" class="ppd-section-toggle" data-ppd-toggle-section="not-included" aria-expanded="false"><span class="ppd-section-toggle-icon" aria-hidden="true">+</span><%= l(:label_project_percent_done_not_included_issues) %></button></h3>
   <div class="ppd-collapsible-body" data-ppd-section-body="not-included" hidden>
@@ -275,7 +275,7 @@
         <select data-ppd-filter-secondary>
           <option value=""><%= l(:label_project_percent_done_all_reasons_filter) %></option>
           <% not_included_reason_options.each do |reason| %>
-            <option value="<%= h(reason) %>"><%= h(reason) %></option>
+            <option value="<%= h(reason) %>"><%= project_percent_done_breakdown_reason_label(reason) %></option>
           <% end %>
         </select>
       </label>
@@ -308,7 +308,7 @@
           data-ppd-filter-row="true"
           data-ppd-search="<%= h([row.issue_id, row.subject, row.status_name, row.original_done_ratio, row.estimated_hours, reason_label].join(' ')) %>"
           data-ppd-status="<%= h(row.status_name) %>"
-          data-ppd-secondary="<%= h(reason_label) %>"
+          data-ppd-secondary="<%= h(row.reason.to_s) %>"
           data-ppd-quick="<%= h(not_included_quick_filter_keys.call(row).join(' ')) %>">
         <td><%= link_to "##{row.issue_id}", issue_path(row.issue) %></td>
         <td class="ppd-issue-subject"><%= link_to h(row.subject), issue_path(row.issue) %></td>
@@ -338,6 +338,30 @@
       return rowValue.split('|||').indexOf(selectedValue) !== -1;
     }
 
+    function updateCsvLink(control, state) {
+      var table = document.getElementById(control.dataset.ppdFilterControls);
+      if (!table) return;
+
+      var section = table.id === 'ppd-not-included-issues' ? 'not-included' : 'included';
+      var link = document.querySelector('[data-ppd-csv-link="' + section + '"]');
+      if (!link || !link.dataset.ppdCsvBase) return;
+
+      var url = new URL(link.dataset.ppdCsvBase, window.location.href);
+      [
+        ['filter_search', state.searchRaw],
+        ['filter_status', state.status],
+        ['filter_secondary', state.secondary],
+        ['filter_quick', state.quick]
+      ].forEach(function(pair) {
+        if (pair[1]) {
+          url.searchParams.set(pair[0], pair[1]);
+        } else {
+          url.searchParams.delete(pair[0]);
+        }
+      });
+      link.href = url.pathname + url.search + url.hash;
+    }
+
     function setSectionExpanded(button, expanded) {
       var sectionName = button.dataset.ppdToggleSection;
       var body = document.querySelector('[data-ppd-section-body="' + sectionName + '"]');
@@ -352,7 +376,8 @@
       var table = document.getElementById(control.dataset.ppdFilterControls);
       if (!table) return;
 
-      var search = normalize((control.querySelector('[data-ppd-filter-search]') || {}).value);
+      var searchRaw = ((control.querySelector('[data-ppd-filter-search]') || {}).value || '').toString().trim();
+      var search = normalize(searchRaw);
       var status = (control.querySelector('[data-ppd-filter-status]') || {}).value || '';
       var secondary = (control.querySelector('[data-ppd-filter-secondary]') || {}).value || '';
       var activeQuick = control.querySelector('.ppd-filter-chip-active');
@@ -380,6 +405,13 @@
           .replace('__visible__', visibleCount)
           .replace('__total__', rows.length);
       }
+
+      updateCsvLink(control, {
+        searchRaw: searchRaw,
+        status: status,
+        secondary: secondary,
+        quick: quick
+      });
     }
 
     document.querySelectorAll('[data-ppd-filter-controls]').forEach(function(control) {
