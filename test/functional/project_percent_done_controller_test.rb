@@ -124,7 +124,9 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
         assert_select 'input[type="search"][data-ppd-filter-search]'
         assert_select 'select[data-ppd-filter-status]'
         assert_select 'select[data-ppd-filter-secondary]'
-        assert_select 'button[data-ppd-quick-filter="closed_as_100"]'
+        assert_select 'button.ppd-filter-chip.ppd-filter-chip-all[data-ppd-quick-filter=""] span.ppd-filter-count-badge',
+                      :text => '1'
+        assert_select 'button[data-ppd-quick-filter="closed_as_100"] span.ppd-filter-count-badge'
         assert_select 'span[data-ppd-filter-count]'
       end
       assert_select 'table#ppd-included-issues[data-ppd-filter-table]' do
@@ -135,8 +137,9 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       end
       assert_select 'div.ppd-table-filter[data-ppd-filter-controls="ppd-not-included-issues"]' do
         assert_select 'label span', :text => I18n.t(:label_project_percent_done_filter)
-        assert_select 'button[data-ppd-quick-filter="parent_issue_excluded"]'
-        assert_select 'button[data-ppd-quick-filter="non_progress_status"]'
+        assert_select 'button.ppd-filter-chip.ppd-filter-chip-all[data-ppd-quick-filter=""] span.ppd-filter-count-badge'
+        assert_select 'button[data-ppd-quick-filter="parent_issue_excluded"] span.ppd-filter-count-badge'
+        assert_select 'button[data-ppd-quick-filter="non_progress_status"] span.ppd-filter-count-badge'
         assert_select 'span[data-ppd-filter-count]'
       end
       assert_select 'table#ppd-not-included-issues[data-ppd-filter-table]' do

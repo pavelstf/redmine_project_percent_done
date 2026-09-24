@@ -124,10 +124,17 @@
 .ppd-table-filter label { display: flex; flex-direction: column; font-weight: 600; gap: 3px; margin: 0; }
 .ppd-table-filter input[type="search"] { min-width: 240px; }
 .ppd-table-filter select { max-width: 280px; }
-.ppd-filter-chips { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; }
-.ppd-filter-chip { background: #fff; border: 1px solid #b8c2cc; border-radius: 3px; color: #344054; cursor: pointer; font-size: 12px; line-height: 1.2; min-height: 26px; padding: 4px 8px; }
-.ppd-filter-chip:hover, .ppd-filter-chip:focus { background-color: #eaf3fb; border-color: #7aa7cc; color: #185b93; }
-.ppd-filter-chip-active { background: #e4f0fb; border-color: #5f9dcc; color: #174f80; font-weight: 600; }
+.ppd-filter-chips { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.ppd-filter-chip { align-items: center; background: #e0f2fe; border: 0; border-radius: 999px; color: #0369a1; cursor: pointer; display: inline-flex; font-size: 11px; font-weight: 700; gap: 7px; line-height: 1; min-height: 25px; opacity: 0.78; padding: 6px 9px; text-transform: uppercase; }
+.ppd-filter-chip:hover, .ppd-filter-chip:focus { opacity: 1; text-decoration: none; }
+.ppd-filter-chip-active, .ppd-filter-chip-active:hover, .ppd-filter-chip-active:focus { box-shadow: 0 0 0 2px rgba(31, 111, 178, 0.22); opacity: 1; }
+.ppd-filter-chip-all { background: #dbeafe; color: #1d4ed8; }
+.ppd-filter-chip-ok { background: #dcfce7; color: #15803d; }
+.ppd-filter-chip-info { background: #e0f2fe; color: #0369a1; }
+.ppd-filter-chip-warning { background: #fef3c7; color: #92400e; }
+.ppd-filter-chip-muted { background: #e2e8f0; color: #334155; }
+.ppd-filter-label { white-space: nowrap; }
+.ppd-filter-count-badge { background: rgba(255, 255, 255, 0.72); border-radius: 999px; color: inherit; font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 700; min-width: 18px; padding: 2px 6px; text-align: center; }
 .ppd-filter-count { color: #667085; font-size: 12px; margin-left: auto; padding: 5px 0; white-space: nowrap; }
 table.list.issues.ppd-issue-table th,
 table.list.issues.ppd-issue-table td {
@@ -137,7 +144,9 @@ table.list.issues.ppd-issue-table td {
 }
 table.list.issues.ppd-issue-table th.ppd-issue-subject,
 table.list.issues.ppd-issue-table td.ppd-issue-subject,
-table.list.issues.ppd-issue-table td.ppd-issue-subject a {
+table.list.issues.ppd-issue-table td.ppd-issue-subject a,
+table.list.ppd-history-issue-table th.ppd-issue-subject,
+table.list.ppd-history-issue-table td.ppd-issue-subject {
   text-align: left !important;
 }
 table.list.issues.ppd-issue-table td.ppd-issue-subject a { display: inline; }

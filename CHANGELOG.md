@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.14] - 2026-09-24
+
+### Changed
+
+- Restyled calculation detail quick filters as Project Risk-style pill badges
+  with per-filter count bubbles and clearer active-state highlighting.
+- Ensured historical issue detail `Subject` columns use the same left-aligned
+  treatment as the live included/not-included issue tables.
+
+## [1.3.13] - 2026-09-23
+
+### Fixed
+
+- Diagnostic details now list not-included issue rows when all eligible leaf
+  issues are excluded by non-progress status or tracker rules.
+- The excluded non-progress applied weight diagnostic now uses the same
+  fallback weighting as normal diagnostics when all candidate issues are
+  excluded.
+
 ## [1.3.12] - 2026-09-16
 
 ### Added

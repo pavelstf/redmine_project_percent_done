@@ -1,5 +1,95 @@
 # Testing Log
 
+## 2026-09-24 - 1.3.14 Diagnostic UI Polish
+
+- Restyled calculation detail quick filters to follow the Project Risk
+  dashboard pill/tab visual pattern: rounded pills, semantic colors, active
+  selection ring, and count bubbles.
+- Added server-rendered counts to included and not-included quick filters.
+- Improved not-included combined non-progress filtering so rows excluded by
+  both status and tracker match both quick filters.
+- Extended `Subject` left alignment to historical issue detail tables.
+- Bumped plugin version to `1.3.14` and CSS cache busters to `1.3.14-r1`.
+- Local validation:
+  - `ruby -c lib\project_percent_done.rb` -> OK;
+  - `ruby -c test\functional\project_percent_done_controller_test.rb` -> OK;
+  - `ruby -c test\unit\project_percent_done\public_api_v1_test.rb` -> OK;
+  - ERB compile checks for touched settings/show/history views: passed;
+  - locale YAML parse checks: passed;
+  - `git diff --check` passed with expected Windows LF/CRLF warnings only.
+- Redmine runtime focused tests were not run in this pass because the current
+  approval policy rejected escalated access to the shared Redmine test runtime.
+- Prepared staging package:
+  - `redmine_project_percent_done-1.3.14-staging-20260924-r2.zip`
+  - SHA-256:
+    `FFF1ABFA0E3DC316C8933A2363A33816FFDF5666090DAD88EC2F174420615CA2`
+  - size: `287251` bytes
+  - archive root: `redmine_project_percent_done/`
+  - package inspection confirmed version `1.3.14` and no `.git`, `.agents`,
+    `.codex`, `tmp`, or `release_packages` entries.
+- Staging was confirmed OK by the user on 2026-09-24.
+- Release state after staging confirmation: `staging-approved`.
+- Prepared production package as a byte-for-byte copy of the approved staging
+  package:
+  - `redmine_project_percent_done-1.3.14-production-20260924.zip`
+  - SHA-256:
+    `FFF1ABFA0E3DC316C8933A2363A33816FFDF5666090DAD88EC2F174420615CA2`
+  - size: `287251` bytes
+  - byte-for-byte identical to
+    `redmine_project_percent_done-1.3.14-staging-20260924-r2.zip`.
+  - release state after production package preparation: `packaged-production`.
+- Production was confirmed OK by the user on 2026-09-24 after installing
+  `1.3.14`.
+- Final release state: `production-approved`.
+
+## 2026-09-23 - 1.3.13 All-Excluded Non-Progress Diagnostics
+
+- Fixed QA finding `QAPPD1312-001`: when all candidate leaf issues are excluded
+  by configured non-progress status and/or tracker rules, calculation details
+  now still build the not-included diagnostic rows and reasons.
+- Kept calculation semantics unchanged: the result remains `0%` with
+  `no_eligible_issues`; the fix only restores diagnostics/CSV/history issue
+  rows and the diagnostic excluded applied weight.
+- Added calculator regressions for:
+  - all leaf issues excluded by tracker scope;
+  - all leaf issues excluded by combined status and tracker rules;
+  - excluded applied weight including the unestimated fallback in the
+    all-excluded branch.
+- Validation after the change:
+  - `ruby -c lib\project_percent_done\project_progress_calculator.rb` -> OK;
+  - `ruby -c test\unit\project_percent_done\project_progress_calculator_test.rb`
+    -> OK;
+  - focused calculator test: `27 runs`, `113 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused controller test: `12 runs`, `97 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused Public API V1 test: `16 runs`, `128 assertions`, `0 failures`,
+    `0 errors`, `0 skips`;
+  - focused history snapshot collector test initially hit SQLite
+    `database is locked` after an earlier interrupted parallel run; after the
+    leftover Ruby process exited, sequential rerun passed with `10 runs`,
+    `44 assertions`, `0 failures`, `0 errors`, `0 skips`.
+  - ERB compile checks for touched settings/show views: passed;
+  - locale YAML parse checks: passed;
+  - `git diff --check` passed with expected Windows LF/CRLF warnings only;
+  - full Redmine 6.1.2 plugin suite passed:
+    `136 runs`, `735 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Prepared staging QA package:
+  - `redmine_project_percent_done-1.3.13-staging-20260923.zip`
+  - SHA-256:
+    `4EE45CACE42A178285812A4E1524F5230F8BE2C5541082C2E37D44213A588499`
+  - size: `282660` bytes
+  - archive root: `redmine_project_percent_done/`
+  - package inspection confirmed version `1.3.13` and no `.git`, `.agents`,
+    `.codex`, `tmp`, or `release_packages` entries.
+- Prepared QA agent bundle:
+  - `qa-agent-project-percent-done-1.3.13-20260923-qappd1312-001.zip`
+  - SHA-256:
+    `1ADC55A1396D48D765E6530B520D34996ADAF807BFA0CA00AF00557D65174495`
+  - size: `220199` bytes
+  - contents: staging plugin ZIP, `HANDOFF_1.3.13.md`, and
+    `QA_BRIEF_project_percent_done_1.3.13.md`.
+
 ## 2026-09-16 - 1.3.12 Non-Progress Tracker Scope
 
 - Added an explicit `No tracker exclusions` / `All trackers` setting for

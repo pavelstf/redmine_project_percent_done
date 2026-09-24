@@ -26,7 +26,12 @@ module ProjectPercentDone
 
       if candidate_issues.empty?
         warning = all_issues.empty? ? :no_issues : :no_eligible_issues
-        return empty_result(warning, all_issue_ids, [], all_issue_ids, 0, 0, [], [], aggregate_fields)
+        diagnostic_average_estimate = average_estimate_for(scoped_candidate_issues.select { |issue| estimated?(issue) })
+        aggregate_fields[:excluded_non_progress_applied_weight] =
+          excluded_non_progress_issues.sum { |issue| diagnostic_weight_for(issue, diagnostic_average_estimate) }
+        not_included_rows = details_mode? ? breakdown_rows_for(all_issues, false, diagnostic_average_estimate) : []
+
+        return empty_result(warning, all_issue_ids, [], all_issue_ids, 0, 0, [], not_included_rows, aggregate_fields)
       end
 
       average_estimate = average_estimate_for(candidate_estimated_issues)
