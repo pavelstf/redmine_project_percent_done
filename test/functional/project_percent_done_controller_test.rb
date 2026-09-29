@@ -111,6 +111,7 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_select 'div.ppd-issue-list-section[data-ppd-section="included"]' do
         assert_select 'a.icon.icon-save[href*=".csv"][href*="table=included"][data-ppd-csv-link][data-ppd-csv-base]',
                       :text => 'CSV'
+        assert_select 'a.icon.icon-save[title=?]', I18n.t(:tooltip_project_percent_done_csv_included)
         assert_select 'button.ppd-section-toggle[data-ppd-toggle-section="included"][aria-expanded="false"]',
                       :text => /#{Regexp.escape(I18n.t(:label_project_percent_done_included_issues))}/
         assert_select 'div.ppd-collapsible-body[data-ppd-section-body="included"][hidden]'
@@ -118,6 +119,7 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_select 'div.ppd-issue-list-section[data-ppd-section="not-included"]' do
         assert_select 'a.icon.icon-save[href*=".csv"][href*="table=not_included"][data-ppd-csv-link][data-ppd-csv-base]',
                       :text => 'CSV'
+        assert_select 'a.icon.icon-save[title=?]', I18n.t(:tooltip_project_percent_done_csv_not_included)
         assert_select 'button.ppd-section-toggle[data-ppd-toggle-section="not-included"][aria-expanded="false"]',
                       :text => /#{Regexp.escape(I18n.t(:label_project_percent_done_not_included_issues))}/
         assert_select 'div.ppd-collapsible-body[data-ppd-section-body="not-included"][hidden]'
@@ -154,6 +156,68 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_includes @response.body, 'updateCsvLink'
       assert_includes @response.body, 'setSectionExpanded'
       assert_includes @response.body, I18n.t(:text_project_percent_done_filter_placeholder)
+      assert_select 'p.project-percent-done-visibility-summary',
+                    :text => I18n.t(
+                      :text_project_percent_done_issue_visibility_summary,
+                      :visible_included => 1,
+                      :total_included => 1,
+                      :visible_not_included => 1,
+                      :total_not_included => 1
+                    )
+    end
+  end
+
+  def test_calculation_details_show_visible_detail_coverage_without_changing_project_truth
+    public_parent = create_test_issue(:subject => 'Public parent detail', :done_ratio => 0, :estimated_hours => 20)
+    create_test_issue(
+      :subject => 'Public visible detail',
+      :parent_issue_id => public_parent.id,
+      :done_ratio => 0,
+      :estimated_hours => 10
+    )
+    private_parent = create_test_issue(
+      :subject => 'Private parent detail',
+      :done_ratio => 100,
+      :estimated_hours => 20,
+      :is_private => true
+    )
+    create_test_issue(
+      :subject => 'Private hidden detail',
+      :parent_issue_id => private_parent.id,
+      :done_ratio => 100,
+      :estimated_hours => 10,
+      :is_private => true
+    )
+    user = User.where(:admin => false).where.not(:status => User::STATUS_ANONYMOUS).first
+    @request.session[:user_id] = user.id
+
+    with_project_percent_done_settings('display_project_tab' => '1') do
+      get :show, :params => { :project_id => test_project.identifier }
+
+      assert_response :success
+      assert_select 'p.project-percent-done-visibility-summary',
+                    :text => I18n.t(
+                      :text_project_percent_done_issue_visibility_summary,
+                      :visible_included => 1,
+                      :total_included => 2,
+                      :visible_not_included => 1,
+                      :total_not_included => 2
+                    )
+      assert_select 'p.warning', :text => I18n.t(:text_project_percent_done_hidden_included_issues, :count => 1)
+      assert_select 'p.warning', :text => I18n.t(:text_project_percent_done_hidden_not_included_issues, :count => 1)
+      assert_includes @response.body, '50%'
+      assert_includes @response.body, 'Public visible detail'
+      assert_includes @response.body, 'Public parent detail'
+      refute_includes @response.body, 'Private hidden detail'
+      refute_includes @response.body, 'Private parent detail'
+
+      get :show, :params => { :project_id => test_project.identifier, :format => 'csv', :table => 'included' }
+
+      assert_response :success
+      rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
+      subjects = rows.drop(1).map { |row| row.fetch(1) }
+      assert_equal ['Public visible detail'], subjects
+      refute_includes rows.flatten, 'Private hidden detail'
     end
   end
 

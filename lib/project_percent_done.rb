@@ -1,6 +1,6 @@
 module ProjectPercentDone
   PLUGIN_ID = 'redmine_project_percent_done'.freeze
-  PLUGIN_VERSION = '1.3.16'.freeze
+  PLUGIN_VERSION = '1.3.17'.freeze
   ALGORITHM_VERSION = '1.1'.freeze
 end
 

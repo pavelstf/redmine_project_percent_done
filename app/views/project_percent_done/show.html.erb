@@ -138,6 +138,14 @@
   <%= l(:text_project_percent_done_visibility_warning) %>
 </p>
 
+<p class="project-percent-done-visibility-summary">
+  <%= l(:text_project_percent_done_issue_visibility_summary,
+        :visible_included => visible_included_rows.size,
+        :total_included => @result.included_rows.size,
+        :visible_not_included => visible_not_included_rows.size,
+        :total_not_included => @result.not_included_rows.size) %>
+</p>
+
 <div class="box ppd-issue-list-section ppd-collapsible-section" data-ppd-section="included">
   <div class="contextual">
     <%= link_to 'CSV', project_percent_done_path(:project_id => @project, :format => :csv, :table => 'included'), :class => 'icon icon-save', :title => l(:tooltip_project_percent_done_csv_included), :'data-ppd-csv-link' => 'included', :'data-ppd-csv-base' => project_percent_done_path(:project_id => @project, :format => :csv, :table => 'included') %>

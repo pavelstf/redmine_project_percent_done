@@ -47,6 +47,7 @@ vi:
   text_project_percent_done_formula: "Project % done = sum((effective issue % done / 100) x applied weight) / sum(applied weight) x 100"
   text_project_percent_done_total_formula: "%{weighted_value} / %{total_weight} x 100 = %{percent}"
   text_project_percent_done_visibility_warning: "This table shows only issues visible to your account. The final project % done, including the totals below, is calculated for the entire project and all applicable issues, regardless of your issue visibility permissions."
+  text_project_percent_done_issue_visibility_summary: "You can view %{visible_included} of %{total_included} included issue details and %{visible_not_included} of %{total_not_included} not-included issue details."
   text_project_percent_done_note_leaf_issues: "Parent issues are excluded by default when they have child issues in the same project, to avoid double counting."
   text_project_percent_done_note_subprojects: "Subprojects are not included. Each project is calculated independently."
   text_project_percent_done_hidden_included_issues: "%{count} included issue(s) are not visible to your account. They are included in the total but hidden from this breakdown."

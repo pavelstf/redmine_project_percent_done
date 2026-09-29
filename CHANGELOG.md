@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.17] - 2026-09-29
+
+### Changed
+
+- Clarified calculation details visibility: the project percentage remains a
+  single all-project aggregate, while detail rows and CSV exports are limited to
+  issues visible to the current user.
+
 ## [1.3.16] - 2026-09-24
 
 ### Security

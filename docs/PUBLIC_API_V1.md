@@ -13,7 +13,7 @@ persistence. Historical methods read official snapshots captured by this plugin.
 
 | Version | Value |
 |---|---|
-| Plugin release | `1.3.16` |
+| Plugin release | `1.3.17` |
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
 | Calculation algorithm | `1.1` |
@@ -108,6 +108,10 @@ both percentage values are `nil`; `unavailable_reason` is
 ## Counts and Coverage
 
 All issue counts are for issues belonging directly to the project.
+They use the plugin's project-wide calculation scope and are not filtered by
+the current user's issue visibility. The public API exposes aggregate values
+only; per-issue visibility filtering applies to the Redmine UI detail tables
+and diagnostic CSV row exports.
 
 - Eligible counts are measured after leaf-scope parent exclusion and before
   non-progress status/tracker exclusion and missing-estimate handling.

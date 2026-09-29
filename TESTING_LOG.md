@@ -1,5 +1,47 @@
 # Testing Log
 
+## 2026-09-29 - 1.3.17 Project Truth Visibility Transparency
+
+- Preserved the existing all-project aggregate semantics for Project % done.
+- Added an always-visible calculation-details summary showing how many included
+  and not-included issue detail rows the current user can view.
+- Clarified diagnostic CSV link tooltips so users know exports include only
+  issue rows visible to their account.
+- Bumped plugin version to `1.3.17`; calculation algorithm and public API
+  contract versions remain unchanged.
+- Local validation:
+  - `ruby -c app/controllers/project_percent_done_controller.rb` -> OK;
+  - `ruby -c test/functional/project_percent_done_controller_test.rb` -> OK;
+  - `ruby -c test/unit/project_percent_done/public_api_v1_test.rb` -> OK;
+  - locale YAML load check for `config/locales/*.yml` -> OK;
+  - focused controller test:
+    `17 runs`, `148 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - focused Public API V1 test:
+    `16 runs`, `128 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - full Redmine 6.1.2 plugin suite passed:
+    `141 runs`, `786 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Prepared staging package:
+  - `redmine_project_percent_done-1.3.17-staging-20260929.zip`
+  - SHA-256:
+    `B2453CF01EE5EF906364567E66DCD0216C4D8B0105D27133C53039FACAA5F058`
+  - size: `314869` bytes
+  - archive root: `redmine_project_percent_done/`
+  - package inspection confirmed version `1.3.17` and no `.git`, `.agents`,
+    `.codex`, `tmp`, or `release_packages` entries.
+- Staging was confirmed OK by the user on 2026-09-29 after manual checks of
+  the details page visibility summary and CSV tooltip behavior.
+- Prepared production package as a byte-for-byte copy of the approved staging
+  package:
+  - `redmine_project_percent_done-1.3.17-production-20260929.zip`
+  - SHA-256:
+    `B2453CF01EE5EF906364567E66DCD0216C4D8B0105D27133C53039FACAA5F058`
+  - size: `314869` bytes
+  - byte-for-byte identical to
+    `redmine_project_percent_done-1.3.17-staging-20260929.zip`.
+- Production was confirmed OK by the user on 2026-09-29 after installing
+  `1.3.17`.
+- Final release state: `production-approved`.
+
 ## 2026-09-24 - 1.3.16 CSV Formula Prefix Hardening
 
 - Extended diagnostic CSV formula neutralization to prefix string values that
