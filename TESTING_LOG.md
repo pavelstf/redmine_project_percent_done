@@ -22,6 +22,17 @@
   - `git diff --check` passed with expected Windows LF/CRLF warnings only;
   - full Redmine 6.1.2 plugin suite passed:
     `140 runs`, `765 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Release commit:
+  `84015a3 Release project percent done 1.3.16`.
+- Prepared staging package:
+  - `redmine_project_percent_done-1.3.16-staging-20260929.zip`
+  - SHA-256:
+    `4DE7551031777FDCA8B96CA3857C54486D351B2CAF9C2E0A4589554073E5ADA2`
+  - size: `268825` bytes
+  - archive root: `redmine_project_percent_done/`
+  - package inspection confirmed version `1.3.16` and no `.git`, `.agents`,
+    `.codex`, `tmp`, or `release_packages` entries.
+- Release state after package preparation: `packaged-staging`.
 
 ## 2026-09-24 - 1.3.15 CSV Formula Hardening
 
