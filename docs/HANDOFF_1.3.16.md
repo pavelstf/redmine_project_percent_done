@@ -2,7 +2,7 @@
 
 ## Status
 
-`packaged-production` on 2026-09-29.
+`production-approved` on 2026-09-29.
 
 This is a narrow CSV hardening release for Project Percent Done. It extends the
 diagnostic CSV formula-neutralization rule added in `1.3.15` so that string
@@ -68,10 +68,12 @@ calculation algorithm version are unchanged.
   lines including `plugin_assets/redmine_project_percent_done`, no plugin 500s
   or stack traces, and only unrelated staging sendmail delivery errors for the
   fake `redmine-staging@example.invalid` sender.
+- Production was confirmed OK by the user on 2026-09-29 after installing
+  `1.3.16`.
 
 ## Release State
 
-- Current state: `packaged-production`.
+- Final state: `production-approved`.
 - Branch at package preparation: `main`.
 - Production package bytes are identical to the user-approved staging package.
 - Local `release_packages/` ZIP artifacts remain intentionally untracked.

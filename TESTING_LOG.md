@@ -52,7 +52,9 @@
   - size: `268825` bytes
   - byte-for-byte identical to
     `redmine_project_percent_done-1.3.16-staging-20260929.zip`.
-- Release state after production package preparation: `packaged-production`.
+- Production was confirmed OK by the user on 2026-09-29 after installing
+  `1.3.16`.
+- Final release state: `production-approved`.
 
 ## 2026-09-24 - 1.3.15 CSV Formula Hardening
 
