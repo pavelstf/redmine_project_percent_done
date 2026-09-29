@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.16] - 2026-09-24
+
+### Security
+
+- Extended diagnostic CSV formula neutralization to also escape string values
+  that begin with tab or carriage-return characters.
+
 ## [1.3.15] - 2026-09-24
 
 ### Security

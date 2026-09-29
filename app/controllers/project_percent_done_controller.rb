@@ -111,7 +111,7 @@ class ProjectPercentDoneController < ApplicationController
 
   def csv_safe_value(value)
     return value unless value.is_a?(String)
-    return value unless value.match?(/\A[=+\-@]/)
+    return value unless value.match?(/\A[=+\-@\t\r]/)
 
     "'#{value}"
   end

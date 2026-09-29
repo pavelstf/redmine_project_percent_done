@@ -1,5 +1,28 @@
 # Testing Log
 
+## 2026-09-24 - 1.3.16 CSV Formula Prefix Hardening
+
+- Extended diagnostic CSV formula neutralization to prefix string values that
+  begin with tab or carriage-return characters, matching the broader CSV safety
+  rule used by Project Contribution.
+- Bumped plugin version to `1.3.16`; calculation algorithm and public API
+  contract versions remain unchanged.
+- Added functional regressions for tab-prefixed included subjects and
+  carriage-return-prefixed not-included subjects.
+- Local validation:
+  - `ruby -c app\controllers\project_percent_done_controller.rb` -> OK;
+  - `ruby -c test\functional\project_percent_done_controller_test.rb` -> OK;
+  - `ruby -c test\unit\project_percent_done\public_api_v1_test.rb` -> OK;
+  - focused Public API V1 test:
+    `16 runs`, `128 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - initial parallel focused controller test hit SQLite
+    `database is locked` while the Public API test was using the same shared
+    runtime database; sequential rerun passed with `16 runs`, `127 assertions`,
+    `0 failures`, `0 errors`, `0 skips`;
+  - `git diff --check` passed with expected Windows LF/CRLF warnings only;
+  - full Redmine 6.1.2 plugin suite passed:
+    `140 runs`, `765 assertions`, `0 failures`, `0 errors`, `0 skips`.
+
 ## 2026-09-24 - 1.3.15 CSV Formula Hardening
 
 - Escaped formula-like string values in included and not-included diagnostic

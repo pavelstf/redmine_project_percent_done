@@ -198,7 +198,12 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
   end
 
   def test_calculation_details_csv_escapes_formula_like_included_subjects
-    create_test_issue(:subject => '=HYPERLINK("http://example.test")', :done_ratio => 50, :estimated_hours => 10)
+    [
+      '=HYPERLINK("http://example.test")',
+      "\t=TAB_PREFIXED_FORMULA()"
+    ].each do |subject|
+      create_test_issue(:subject => subject, :done_ratio => 50, :estimated_hours => 10)
+    end
 
     with_project_percent_done_settings('display_project_tab' => '1') do
       get :show, :params => { :project_id => test_project.identifier, :format => 'csv', :table => 'included' }
@@ -206,7 +211,9 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_response :success
       rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
       assert_includes rows.flatten, "'=HYPERLINK(\"http://example.test\")"
+      assert_includes rows.flatten, "'\t=TAB_PREFIXED_FORMULA()"
       refute_includes rows.flatten, '=HYPERLINK("http://example.test")'
+      refute_includes rows.flatten, "\t=TAB_PREFIXED_FORMULA()"
     end
   end
 
@@ -252,7 +259,9 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
 
   def test_calculation_details_csv_escapes_formula_like_not_included_subjects
     parent = create_test_issue(:subject => '@SUM(1,2)', :done_ratio => 100, :estimated_hours => 20)
+    cr_parent = create_test_issue(:subject => "\r=CR_PREFIXED_FORMULA()", :done_ratio => 100, :estimated_hours => 20)
     create_test_issue(:subject => 'Child CSV task', :parent_issue_id => parent.id, :done_ratio => 50, :estimated_hours => 10)
+    create_test_issue(:subject => 'Child CR CSV task', :parent_issue_id => cr_parent.id, :done_ratio => 50, :estimated_hours => 10)
 
     with_project_percent_done_settings('display_project_tab' => '1') do
       get :show, :params => { :project_id => test_project.identifier, :format => 'csv', :table => 'not_included' }
@@ -260,7 +269,9 @@ class ProjectPercentDoneControllerTest < ActionController::TestCase
       assert_response :success
       rows = CSV.parse(@response.body.delete_prefix("\uFEFF"))
       assert_includes rows.flatten, "'@SUM(1,2)"
+      assert_includes rows.flatten, "'\r=CR_PREFIXED_FORMULA()"
       refute_includes rows.flatten, '@SUM(1,2)'
+      refute_includes rows.flatten, "\r=CR_PREFIXED_FORMULA()"
     end
   end
 
