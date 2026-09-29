@@ -2,7 +2,7 @@
 
 ## Status
 
-`packaged-staging` on 2026-09-29.
+`packaged-production` on 2026-09-29.
 
 This is a narrow CSV hardening release for Project Percent Done. It extends the
 diagnostic CSV formula-neutralization rule added in `1.3.15` so that string
@@ -35,6 +35,12 @@ calculation algorithm version are unchanged.
     `PLUGIN_VERSION = '1.3.16'`;
   - no `.git`, `.agents`, `.codex`, `tmp`, or `release_packages` entries are
     present in the archive.
+- Production package:
+  `release_packages/redmine_project_percent_done-1.3.16-production-20260929.zip`
+  - SHA-256:
+    `4DE7551031777FDCA8B96CA3857C54486D351B2CAF9C2E0A4589554073E5ADA2`
+  - size: `268825` bytes
+  - byte-for-byte identical to the staging-approved package.
 
 ## Validation
 
@@ -51,12 +57,23 @@ calculation algorithm version are unchanged.
 - `git diff --check` passed with expected Windows LF/CRLF warnings only.
 - Full Redmine 6.1.2 plugin suite passed:
   `140 runs`, `765 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Staging was confirmed OK by the user on 2026-09-29 after manual checks:
+  version `1.3.16`, Project % Done page, included/not-included sections, CSV
+  export, filtered CSV row sets and filenames, UTF-8/Cyrillic CSV handling, and
+  formula-like subject escaping.
+- Staging CSV formula check showed the expected quoted CSV field with doubled
+  internal quotes and a leading apostrophe:
+  `8289,"'=HYPERLINK(""http://example.test"");",В изчакване,0.00%,,Unestimated issue ignored by plugin setting`
+- Staging log review from the provided output showed asset compilation INFO
+  lines including `plugin_assets/redmine_project_percent_done`, no plugin 500s
+  or stack traces, and only unrelated staging sendmail delivery errors for the
+  fake `redmine-staging@example.invalid` sender.
 
 ## Release State
 
-- Current state: `packaged-staging`.
+- Current state: `packaged-production`.
 - Branch at package preparation: `main`.
-- No production package has been prepared for `1.3.16` yet.
+- Production package bytes are identical to the user-approved staging package.
 - Local `release_packages/` ZIP artifacts remain intentionally untracked.
 
 ## Remaining Backlog

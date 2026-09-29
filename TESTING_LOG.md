@@ -32,7 +32,27 @@
   - archive root: `redmine_project_percent_done/`
   - package inspection confirmed version `1.3.16` and no `.git`, `.agents`,
     `.codex`, `tmp`, or `release_packages` entries.
-- Release state after package preparation: `packaged-staging`.
+- Staging was confirmed OK by the user on 2026-09-29 after manual checks:
+  version `1.3.16`, Project % Done page, included/not-included sections, CSV
+  export, filtered CSV row sets and filenames, UTF-8/Cyrillic CSV handling, and
+  formula-like subject escaping.
+- Staging CSV formula check showed:
+  `8289,"'=HYPERLINK(""http://example.test"");",В изчакване,0.00%,,Unestimated issue ignored by plugin setting`
+  which is the expected quoted CSV field with doubled internal quotes and a
+  leading apostrophe.
+- Staging log review from the provided output showed asset compilation INFO
+  lines including `plugin_assets/redmine_project_percent_done`, no plugin 500s
+  or stack traces, and only unrelated staging sendmail delivery errors for the
+  fake `redmine-staging@example.invalid` sender.
+- Prepared production package as a byte-for-byte copy of the approved staging
+  package:
+  - `redmine_project_percent_done-1.3.16-production-20260929.zip`
+  - SHA-256:
+    `4DE7551031777FDCA8B96CA3857C54486D351B2CAF9C2E0A4589554073E5ADA2`
+  - size: `268825` bytes
+  - byte-for-byte identical to
+    `redmine_project_percent_done-1.3.16-staging-20260929.zip`.
+- Release state after production package preparation: `packaged-production`.
 
 ## 2026-09-24 - 1.3.15 CSV Formula Hardening
 
