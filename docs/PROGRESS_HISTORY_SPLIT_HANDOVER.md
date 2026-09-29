@@ -17,6 +17,16 @@ New project repository:
 
 - `https://github.com/pavelstf/redmine_project_progress_history.git`
 
+Current working state:
+
+- Active split work continues in the separate Project Progress History Codex
+  project.
+- This Project Percent Done repo is in a waiting/provider-readiness state until
+  the new project completes Phase 0 inventory/design and returns a detailed
+  split plan.
+- Do not implement Project Percent Done coexistence guards or provider adapter
+  changes before the Phase 0 plan is reviewed and approved.
+
 This document is the cross-project handover for both development streams:
 
 - Project Percent Done: `redmine_project_percent_done`
@@ -34,7 +44,7 @@ own project-specific trackers.
 | Create cross-project handover docs | Done | `PROGRESS_HISTORY_SPLIT_HANDOVER.md` and `PROGRESS_HISTORY_PROVIDER_HANDOFF.md` prepared in the Project Percent Done repo. |
 | Commit and push handover docs | Done | Pushed to `main`; no release tag required for documentation-only handover. |
 | Create separate Project Progress History project | Done | GitHub repo created: `https://github.com/pavelstf/redmine_project_progress_history.git`; plugin id: `redmine_project_progress_history`. |
-| Phase 0 inventory/design | Pending | Inventory all history-related code before implementation. |
+| Phase 0 inventory/design | Pending in new project | Inventory all history-related code in the separate Project Progress History project before implementation. |
 | Approve detailed split plan | Pending | Must happen after inventory, before moving/scaffolding behavior. |
 | Phase 1 scaffold/provider API | Pending | New plugin skeleton and generic provider registry/API. |
 | Phase 2 adopt legacy history behavior | Pending | New plugin adopts history behavior using legacy tables. |
