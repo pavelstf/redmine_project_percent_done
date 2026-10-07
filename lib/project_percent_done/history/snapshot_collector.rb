@@ -2,6 +2,18 @@ module ProjectPercentDone
   module History
     class SnapshotCollector
       Result = Struct.new(:run, :preview, keyword_init: true)
+      GuardedRun = Struct.new(
+        :status,
+        :projects_processed,
+        :projects_succeeded,
+        :projects_failed,
+        :snapshots_created,
+        :snapshots_promoted,
+        :issue_snapshots_created,
+        :details_deleted,
+        :errors_list,
+        keyword_init: true
+      )
       Period = Struct.new(:type, :end_date, keyword_init: true) do
         def boundary
           Time.zone.local(end_date.year, end_date.month, end_date.day, 23, 59, 59)
@@ -17,6 +29,7 @@ module ProjectPercentDone
       end
 
       def call
+        return guarded_result if ProjectPercentDone::History::Coexistence.progress_history_plugin_active?
         return preview_result if preview
 
         with_collector_lock do
@@ -34,6 +47,21 @@ module ProjectPercentDone
       end
 
       private
+
+      def guarded_result
+        run = GuardedRun.new(
+          :status => 'disabled',
+          :projects_processed => 0,
+          :projects_succeeded => 0,
+          :projects_failed => 0,
+          :snapshots_created => 0,
+          :snapshots_promoted => 0,
+          :issue_snapshots_created => 0,
+          :details_deleted => 0,
+          :errors_list => [ProjectPercentDone::History::Coexistence.guarded_reason]
+        )
+        Result.new(:run => run, :preview => preview)
+      end
 
       def collect(run)
         unless ProjectPercentDone::Settings.history_enabled?

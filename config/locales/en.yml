@@ -191,6 +191,7 @@ en:
   button_project_percent_done_history_capture: "Create due snapshot now"
   button_project_percent_done_history_test_email: "Send test email"
   text_project_percent_done_history_feature_help: "The daily task keeps one operational backup and promotes the nearest snapshot to an official Sunday period. Collection is off by default and only active projects with a selected project type are calculated."
+  text_project_percent_done_history_owned_by_progress_history: "Historical progress collection, history pages, diagnostics, cron, retention and notifications are now owned by the Project Progress History plugin. Project Percent Done remains the source of truth for the current Project % Done calculation and Public API provider."
   help_project_percent_done_history_enabled: "Master switch. Default: off. When off, no project or issue snapshots are created; the existing live calculation remains unchanged. Existing history is retained. A weekly disabled-state email may still be sent when email remains enabled."
   help_project_percent_done_history_detail_level: "Project aggregates stores percent and all indicators. Project and issue details additionally stores every issue, including excluded issues. Default: project only. Changing this affects new snapshots only. Issue details follow both retention policies."
   help_project_percent_done_history_visibility: "Controls only project history UI visibility. Default: hidden. Collection, diagnostics and emails can run while history is hidden, which is recommended for the first production shadow period."

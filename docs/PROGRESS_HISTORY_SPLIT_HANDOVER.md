@@ -48,7 +48,7 @@ own project-specific trackers.
 | Approve detailed split plan | Pending | Must happen after inventory, before moving/scaffolding behavior. |
 | Phase 1 scaffold/provider API | Pending | New plugin skeleton and generic provider registry/API. |
 | Phase 2 adopt legacy history behavior | Pending | New plugin adopts history behavior using legacy tables. |
-| Phase 3 Project Percent Done coexistence guard | Pending | Disable/delegate old history surface when new plugin owns history. |
+| Phase 3 Project Percent Done coexistence guard | Done in code | Defensive guard added in Project Percent Done; full Redmine 6.1.2 plugin suite passed locally on 2026-10-01. |
 | Staging validation | Pending | Prove no data loss, no double writes, no duplicate tabs. |
 | Production closeout | Pending | Packages, install scripts, approvals, commits/tags per release rules. |
 
@@ -269,12 +269,15 @@ the approved API path.
 
 ### Phase 3 - Coexistence Guard In Project Percent Done
 
-Add compatibility behavior in `redmine_project_percent_done`:
+Compatibility behavior added in `redmine_project_percent_done`:
 
-- detect `redmine_project_progress_history`;
-- disable/delegate legacy history menu when the new plugin owns history;
-- disable/delegate legacy history cron/settings paths when needed;
-- show clear admin guidance instead of conflicting controls.
+- detects active `redmine_project_progress_history` ownership through defensive
+  plugin/settings checks;
+- hides old history availability/settings when the new plugin owns history;
+- blocks old history admin actions and rake paths when the new plugin owns
+  history;
+- prevents old snapshot collector writes under new-plugin ownership;
+- shows clear admin guidance instead of conflicting controls.
 
 The live Project % Done details page and Public API V1 remain available.
 

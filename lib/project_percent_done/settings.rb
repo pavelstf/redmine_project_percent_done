@@ -154,7 +154,7 @@ module ProjectPercentDone
       end
 
       def history_enabled?
-        enabled?('history_enabled')
+        ProjectPercentDone::History::Coexistence.owns_history? && enabled?('history_enabled')
       end
 
       def history_detail_level
@@ -182,6 +182,7 @@ module ProjectPercentDone
       end
 
       def history_available_for_project?(project, user = nil)
+        return false unless ProjectPercentDone::History::Coexistence.owns_history?
         return false unless project && history_visible?(user)
 
         history_enabled? ||
@@ -251,7 +252,7 @@ module ProjectPercentDone
       end
 
       def history_email_enabled?
-        enabled?('history_email_enabled')
+        ProjectPercentDone::History::Coexistence.owns_history? && enabled?('history_email_enabled')
       end
 
       def history_email_notification_level

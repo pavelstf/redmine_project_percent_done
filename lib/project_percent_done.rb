@@ -1,6 +1,6 @@
 module ProjectPercentDone
   PLUGIN_ID = 'redmine_project_percent_done'.freeze
-  PLUGIN_VERSION = '1.3.17'.freeze
+  PLUGIN_VERSION = '1.3.18'.freeze
   ALGORITHM_VERSION = '1.1'.freeze
 end
 
@@ -9,6 +9,7 @@ require_relative 'project_percent_done/issue_breakdown_row'
 require_relative 'project_percent_done/calculation_result'
 require_relative 'project_percent_done/project_progress_calculator'
 require_relative 'project_percent_done/public_api/v1'
+require_relative 'project_percent_done/history/coexistence'
 require_relative 'project_percent_done/history/project_selector'
 require_relative 'project_percent_done/history/retention_cleaner'
 require_relative 'project_percent_done/history/plan_metrics'

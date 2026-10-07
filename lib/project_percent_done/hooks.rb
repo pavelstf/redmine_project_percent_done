@@ -42,6 +42,7 @@ module ProjectPercentDone
     end
 
     def cached_latest_snapshots(controller, project)
+      return {} unless ProjectPercentDone::History::Coexistence.owns_history?
       return {} unless ActiveRecord::Base.connection.data_source_exists?(ProjectPercentDoneSnapshot.table_name)
 
       cache = controller.instance_variable_get(:@project_percent_done_latest_snapshots_cache) || {}

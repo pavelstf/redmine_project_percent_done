@@ -81,6 +81,15 @@ class ProjectPercentDone::SettingsTest < ActiveSupport::TestCase
     end
   end
 
+  def test_history_is_disabled_when_progress_history_plugin_is_active
+    with_project_percent_done_settings('history_enabled' => '1') do
+      with_progress_history_plugin_active(true) do
+        refute ProjectPercentDone::Settings.history_enabled?
+        refute ProjectPercentDone::Settings.history_available_for_project?(test_project)
+      end
+    end
+  end
+
   def test_legacy_tracker_ids_without_scope_keep_tracker_exclusions_enabled
     tracker = Tracker.create!(:name => "Admin #{SecureRandom.hex(3)}", :default_status => open_status)
     previous = Setting.plugin_redmine_project_percent_done

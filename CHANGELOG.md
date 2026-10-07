@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.18] - 2026-10-01
+
+### Added
+
+- Added a defensive coexistence guard for `redmine_project_progress_history`
+  ownership of historical progress behavior.
+- Added a Project Percent Done cleanup inventory documenting which legacy
+  history surfaces stay, which are guarded, and which are deferred for a future
+  cleanup cycle.
+
+### Changed
+
+- When Project Progress History is active, Project Percent Done suppresses its
+  old history settings, admin actions, cron tasks, and snapshot writer while
+  keeping the live Project % Done page and Public API V1 available.
+- Legacy dashboard/sidebar snapshot freshness rows are also suppressed while
+  Project Progress History owns history, so Project Percent Done presents only
+  the current Project % Done/provider surface in the UI.
+
 ## [1.3.17] - 2026-09-29
 
 ### Changed

@@ -1,5 +1,98 @@
 # Testing Log
 
+## 2026-10-07 - 1.3.18 Project Percent Done Cleanup Inventory/UI Delegation
+
+- Confirmed repository scope is `redmine_project_percent_done`; no work was
+  done in Project Contribution or Project TimeShift.
+- Inventoried remaining Project Percent Done history surfaces and recorded the
+  cleanup boundary in `docs/PROJECT_PERCENT_DONE_CLEANUP_INVENTORY.md`.
+- Kept Project Percent Done as source of truth for the current Project % Done
+  value and `ProjectPercentDone::PublicApi::V1`.
+- No destructive migrations were added or run; old `project_percent_done_*`
+  history tables remain archived in place.
+- Extended the coexistence cleanup so, while Project Progress History owns
+  history:
+  - legacy dashboard/sidebar snapshot freshness rows are suppressed;
+  - legacy history email enablement reads disabled;
+  - old history settings remain represented by the delegation notice instead of
+    appearing as Project Percent Done-owned controls.
+- Focused Redmine 6.1.2 validation through the shared
+  `redmine-plugin-test-runtime`:
+  - coexistence guard test:
+    `4 runs`, `6 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - hook/dashboard cleanup test:
+    `5 runs`, `21 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - settings controller test:
+    `9 runs`, `77 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - admin controller test:
+    `3 runs`, `9 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - snapshot collector test:
+    `11 runs`, `53 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - settings test:
+    `10 runs`, `51 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - Public API V1 test:
+    `16 runs`, `128 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- First full-suite attempt exposed a stale shared test DB missing legacy history
+  tables (`project_percent_done_snapshots` and
+  `project_percent_done_collection_runs`): `151 runs`, `480 assertions`,
+  `0 failures`, `64 errors`, `0 skips`.
+- Re-ran `scripts/setup_redmine_test_runtime.ps1` from the shared
+  `redmine-plugin-test-runtime` skill to restore the Redmine 6.1.2 runtime
+  wiring/test database state.
+- Final full Redmine 6.1.2 plugin suite passed:
+  `151 runs`, `823 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- No package or deployment artifact was prepared.
+
+## 2026-10-01 - 1.3.18 Project Progress History Coexistence Guard
+
+- Added a defensive coexistence guard for `redmine_project_progress_history`
+  ownership of historical progress behavior.
+- Project Percent Done continues to own the live Project % Done calculation and
+  `ProjectPercentDone::PublicApi::V1`.
+- When Project Progress History is active, Project Percent Done suppresses old
+  history ownership surfaces:
+  - history availability/settings;
+  - admin preview/capture/test-email/purge endpoints;
+  - cron/rake snapshot, cleanup, purge, and staging-demo paths;
+  - snapshot collector writes.
+- Settings saves sanitize old `history_enabled` and `history_email_enabled`
+  flags to `0` while Project Progress History owns history behavior.
+- Hidden historical settings are preserved during guarded settings saves so
+  rollback and transition validation do not lose the previous configuration.
+- Local Redmine 6.1.2 validation:
+  - focused coexistence test:
+    `4 runs`, `6 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - focused settings test:
+    `10 runs`, `51 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - focused snapshot collector test:
+    `11 runs`, `53 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - focused settings controller test:
+    `9 runs`, `77 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - focused admin controller test initially hit transient SQLite
+    `database is locked` during fixture loading; rerun passed:
+    `3 runs`, `9 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - full Redmine 6.1.2 plugin suite passed:
+    `150 runs`, `821 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Staging package candidate update:
+  - bumped plugin version to `1.3.18` for the coexistence guard build;
+  - updated the Public API test to assert the exported plugin version against
+    `ProjectPercentDone::PLUGIN_VERSION`;
+  - post-bump full Redmine 6.1.2 plugin suite passed:
+    `150 runs`, `821 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Prepared staging package:
+  `redmine_project_percent_done-1.3.18-staging-20261001.zip`.
+- Package size: `322576` bytes.
+- SHA-256:
+  `0E4F0F37DB66E0646024CC9F65E860EFB073DAFA6F03237E7193ADBC2A6DB043`.
+- Package inspection confirmed a single `redmine_project_percent_done`
+  top-level folder, `init.rb`, `179` archive entries, and no `.git`,
+  `.agents`, `.codex`, `tmp`, `log`, `.bundle`, `vendor/bundle`, or
+  `release_packages` entries.
+- Split staging companion package prepared:
+  `redmine_project_progress_history-0.1.0-staging-20261001.zip`.
+- Companion package SHA-256:
+  `51094452B2678764B68264FBF7F79866570BE2407FB3A66D041B62432437472A`.
+
 ## 2026-09-29 - 1.3.17 Project Truth Visibility Transparency
 
 - Preserved the existing all-project aggregate semantics for Project % done.

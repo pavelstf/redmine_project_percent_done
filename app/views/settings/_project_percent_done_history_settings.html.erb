@@ -1,4 +1,10 @@
 <% @settings = ProjectPercentDone::Settings.form_values(@settings) %>
+<% if ProjectPercentDone::History::Coexistence.progress_history_plugin_active? %>
+  <fieldset class="box ppd-history-settings">
+    <legend><%= l(:label_project_percent_done_history_settings) %></legend>
+    <p class="info"><%= l(:text_project_percent_done_history_owned_by_progress_history) %></p>
+  </fieldset>
+<% else %>
 <% history_enabled = @settings['history_enabled'].to_s == '1' %>
 <% email_enabled = @settings['history_email_enabled'].to_s == '1' %>
 <% project_fields = ProjectCustomField.where(:field_format => 'list').order(:name) %>
@@ -304,3 +310,4 @@
     });
   })();
 </script>
+<% end %>

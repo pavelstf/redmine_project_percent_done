@@ -77,6 +77,36 @@ class ProjectPercentDoneHooksTest < ActionController::TestCase
     assert_equal official_monthly, captured_locals[:latest_snapshots][:official_monthly]
   end
 
+  def test_hook_suppresses_snapshot_freshness_when_progress_history_plugin_is_active
+    ProjectPercentDoneSnapshot.create!(
+      :project => test_project,
+      :snapshot_kind => 'official',
+      :period_type => 'weekly',
+      :period_end => Date.new(2026, 8, 9),
+      :captured_at => Time.zone.local(2026, 8, 10, 0, 5),
+      :project_state => 'active',
+      :display_percent_done => 41
+    )
+
+    fake_controller = Object.new
+    captured_locals = nil
+    fake_controller.define_singleton_method(:render_to_string) do |options|
+      captured_locals = options[:locals]
+      ''
+    end
+
+    with_progress_history_plugin_active(true) do
+      ProjectPercentDone::Hooks.send(:new).send(
+        :render_project_percent_done_partial,
+        { :controller => fake_controller, :project => test_project },
+        'hooks/project_percent_done/sidebar'
+      )
+    end
+
+    assert_equal false, captured_locals[:history_available]
+    assert_equal({}, captured_locals[:latest_snapshots])
+  end
+
   def test_hook_skips_latest_snapshot_group_lookup_when_history_table_is_missing
     fake_controller = Object.new
     captured_locals = nil

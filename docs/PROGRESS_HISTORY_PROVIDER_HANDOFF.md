@@ -97,6 +97,12 @@ Detection should be defensive. Do not assume every install has the new plugin.
 Do not fail live Project % Done calculation when the new history plugin is
 missing, disabled, or misconfigured.
 
+Implementation note 2026-10-01: Project Percent Done now includes this
+defensive coexistence guard. The guard activates only when Project Progress
+History is present and its history/page ownership setting is enabled, so
+Project Percent Done alone keeps transitional history behavior while the live
+Project % Done calculation and Public API V1 remain available in both states.
+
 ## Legacy Storage
 
 The first split release uses legacy history tables without table rename.

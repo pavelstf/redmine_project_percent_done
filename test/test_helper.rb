@@ -13,6 +13,15 @@ module ProjectPercentDoneTestSupport
     Setting.plugin_redmine_project_percent_done = previous_settings
   end
 
+  def with_progress_history_plugin_active(active)
+    singleton = ProjectPercentDone::History::Coexistence.singleton_class
+    original = ProjectPercentDone::History::Coexistence.method(:progress_history_plugin_active?)
+    singleton.define_method(:progress_history_plugin_active?) { active }
+    yield
+  ensure
+    singleton.define_method(:progress_history_plugin_active?, original) if original
+  end
+
   def test_project
     @test_project ||= Project.create!(
       :name => "Project Percent Done Test #{SecureRandom.hex(4)}",

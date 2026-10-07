@@ -32,4 +32,13 @@ class ProjectPercentDoneAdminControllerTest < ActionController::TestCase
     refute ProjectPercentDoneSnapshot.exists?(snapshot.id)
     assert Project.exists?(test_project.id)
   end
+
+  def test_capture_is_forbidden_when_progress_history_plugin_is_active
+    @request.session[:user_id] = 1
+    with_progress_history_plugin_active(true) do
+      post :capture
+
+      assert_response :forbidden
+    end
+  end
 end

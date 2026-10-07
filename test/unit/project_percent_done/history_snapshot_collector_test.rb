@@ -176,6 +176,26 @@ class ProjectPercentDone::History::SnapshotCollectorTest < ActiveSupport::TestCa
     end
   end
 
+  def test_progress_history_owner_disables_collection_without_old_history_writes
+    with_history_settings do
+      with_progress_history_plugin_active(true) do
+        result = nil
+
+        assert_no_difference -> { ProjectPercentDoneCollectionRun.count } do
+          assert_no_difference -> { ProjectPercentDoneSnapshot.count } do
+            assert_no_difference -> { ProjectPercentDoneIssueSnapshot.count } do
+              result = collect_at(2026, 7, 13, 0, 15)
+            end
+          end
+        end
+
+        assert_equal 'disabled', result.run.status
+        assert_equal 0, result.run.projects_processed
+        assert_equal ['redmine_project_progress_history'], result.run.errors_list
+      end
+    end
+  end
+
   private
 
   def with_history_settings(extra = {}, &block)

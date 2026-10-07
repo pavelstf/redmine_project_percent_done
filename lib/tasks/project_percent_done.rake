@@ -2,6 +2,12 @@ namespace :redmine do
   namespace :project_percent_done do
     desc 'Capture daily operational and due official project progress snapshots'
     task :snapshots => :environment do
+      if ProjectPercentDone::History::Coexistence.progress_history_plugin_active?
+        puts "Status: disabled"
+        puts "Reason: history is owned by #{ProjectPercentDone::History::Coexistence.guarded_reason}"
+        next
+      end
+
       result = ProjectPercentDone::History::SnapshotCollector.new(:source => 'cron').call
       run = result.run
       puts "Status: #{run.status}"
@@ -17,6 +23,12 @@ namespace :redmine do
 
     desc 'Delete issue snapshot details outside the configured retention policy'
     task :cleanup => :environment do
+      if ProjectPercentDone::History::Coexistence.progress_history_plugin_active?
+        puts "Status: disabled"
+        puts "Reason: history cleanup is owned by #{ProjectPercentDone::History::Coexistence.guarded_reason}"
+        next
+      end
+
       if ENV['DRY_RUN'].to_s == '1'
         puts 'Dry run: cleanup was not executed.'
         puts "Issue detail retention weeks: #{ProjectPercentDone::Settings.history_issue_retention_weeks}"
@@ -31,6 +43,8 @@ namespace :redmine do
 
     desc 'Purge all snapshot history for one project (PROJECT=identifier, DRY_RUN=1 by default)'
     task :purge_project => :environment do
+      abort "History purge is disabled because history is owned by #{ProjectPercentDone::History::Coexistence.guarded_reason}." if ProjectPercentDone::History::Coexistence.progress_history_plugin_active?
+
       identifier = ENV['PROJECT'].to_s
       abort 'PROJECT=identifier is required' if identifier.blank?
       project = Project.find_by_identifier(identifier)
@@ -52,6 +66,13 @@ namespace :redmine do
 
     desc 'Preview, seed, or clean protected staging demo history (ACTION=preview|seed|cleanup)'
     task :staging_demo => :environment do
+      if ProjectPercentDone::History::Coexistence.progress_history_plugin_active?
+        puts "Action: #{ENV.fetch('ACTION', 'preview')}"
+        puts "Status: disabled"
+        puts "Reason: staging demo history is owned by #{ProjectPercentDone::History::Coexistence.guarded_reason}"
+        next
+      end
+
       result = ProjectPercentDone::History::StagingDemo.new(
         :action => ENV.fetch('ACTION', 'preview'),
         :confirmation => ENV['CONFIRM']

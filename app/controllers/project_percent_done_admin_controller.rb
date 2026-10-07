@@ -1,5 +1,6 @@
 class ProjectPercentDoneAdminController < ApplicationController
   before_action :require_system_admin
+  before_action :ensure_history_owned_here
 
   def preview
     result = ProjectPercentDone::History::SnapshotCollector.new(
@@ -71,6 +72,10 @@ class ProjectPercentDoneAdminController < ApplicationController
 
   def require_system_admin
     render_403 unless User.current.admin?
+  end
+
+  def ensure_history_owned_here
+    render_403 unless ProjectPercentDone::History::Coexistence.owns_history?
   end
 
   def redirect_to_plugin_settings

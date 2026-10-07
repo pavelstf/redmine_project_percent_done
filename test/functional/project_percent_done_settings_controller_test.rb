@@ -95,6 +95,51 @@ class ProjectPercentDoneSettingsControllerTest < ActionController::TestCase
     end
   end
 
+  def test_history_settings_are_replaced_by_coexistence_notice_when_progress_history_is_active
+    with_progress_history_plugin_active(true) do
+      get :plugin, :params => { :id => ProjectPercentDone::PLUGIN_ID }
+
+      assert_response :success
+      assert_includes @response.body, I18n.t(:text_project_percent_done_history_owned_by_progress_history)
+      assert_select 'input[name="settings[history_enabled]"]', :count => 0
+      assert_select 'fieldset.ppd-history-diagnostics', :count => 0
+      assert_select 'a.ppd-diagnostic-action', :count => 0
+      assert_select 'code#ppd-history-rake-command', :count => 0
+      assert_includes @response.body, I18n.t(:label_project_percent_done_calculation_settings)
+    end
+  end
+
+  def test_history_flags_are_sanitized_on_settings_save_when_progress_history_is_active
+    previous = Setting.plugin_redmine_project_percent_done
+    Setting.plugin_redmine_project_percent_done = ProjectPercentDone::Settings::DEFAULTS.merge(
+      'history_project_type_custom_field_id' => '42',
+      'history_project_type_values' => ['Internal'],
+      'history_issue_retention_weeks' => '104'
+    )
+
+    with_progress_history_plugin_active(true) do
+      post :plugin, :params => {
+        :id => ProjectPercentDone::PLUGIN_ID,
+        :settings => ProjectPercentDone::Settings::DEFAULTS.merge(
+          'display_project_tab' => '1',
+          'history_enabled' => '1',
+          'history_email_enabled' => '1'
+        )
+      }
+
+      assert_redirected_to plugin_settings_path(ProjectPercentDone::PLUGIN_ID)
+      saved = Setting.plugin_redmine_project_percent_done
+      assert_equal '1', saved['display_project_tab']
+      assert_equal '0', saved['history_enabled']
+      assert_equal '0', saved['history_email_enabled']
+      assert_equal '42', saved['history_project_type_custom_field_id']
+      assert_equal ['Internal'], saved['history_project_type_values']
+      assert_equal '104', saved['history_issue_retention_weeks']
+    end
+  ensure
+    Setting.plugin_redmine_project_percent_done = previous
+  end
+
   def test_invalid_enabled_history_configuration_is_not_saved
     original = Setting.plugin_redmine_project_percent_done
     post :plugin, :params => {
