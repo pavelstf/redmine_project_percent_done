@@ -1,5 +1,27 @@
 # Testing Log
 
+## 2026-10-07 - 1.3.18 Staging CSS Asset Hotfix
+
+- Staging validation of
+  `redmine_project_percent_done-1.3.18-staging-20261007-cleanup.zip` exposed
+  missing Project Percent Done CSS:
+  `/assets/plugin_assets/redmine_project_percent_done/project_percent_done-dfa65724.css?v=1.3.14-r1`
+  returned `ActionController::RoutingError`.
+- The missing stylesheet caused the settings help icons/tooltips, calculation
+  details filter chips, and collapsible section buttons to render with native
+  browser/Redmine fallback styling.
+- Updated the settings and calculation details views to load the stable copied
+  plugin asset path:
+  `/plugin_assets/redmine_project_percent_done/stylesheets/project_percent_done.css?v=1.3.18-r2`.
+- No database migrations, Public API V1 contract changes, current Project %
+  Done calculation changes, or cron changes were made.
+- Initial parallel focused test attempts hit transient SQLite `database is
+  locked` errors in the shared test runtime; sequential reruns passed:
+  - settings controller:
+    `9 runs`, `77 assertions`, `0 failures`, `0 errors`, `0 skips`;
+  - project percent done controller:
+    `17 runs`, `148 assertions`, `0 failures`, `0 errors`, `0 skips`.
+
 ## 2026-10-07 - 1.3.18 Project Percent Done Cleanup Inventory/UI Delegation
 
 - Confirmed repository scope is `redmine_project_percent_done`; no work was

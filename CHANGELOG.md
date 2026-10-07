@@ -23,6 +23,12 @@ The format follows the spirit of Keep a Changelog, and this project uses semanti
   Project Progress History owns history, so Project Percent Done presents only
   the current Project % Done/provider surface in the UI.
 
+### Fixed
+
+- Fixed Project Percent Done stylesheet loading on GCR staging by using the
+  stable Redmine plugin asset path instead of a fingerprinted asset-pipeline URL
+  that is not produced by the guarded asset refresh.
+
 ## [1.3.17] - 2026-09-29
 
 ### Changed
