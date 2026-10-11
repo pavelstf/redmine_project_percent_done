@@ -102,7 +102,7 @@ module ProjectPercentDone
       scope = Issue.where(:project_id => project.id)
 
       if details_mode?
-        scope.includes(:status).to_a
+        scope.includes(:assigned_to, :status, :tracker).to_a
       else
         scope.includes(:status)
              .select(:id, :project_id, :parent_id, :tracker_id, :status_id, :done_ratio, :estimated_hours)

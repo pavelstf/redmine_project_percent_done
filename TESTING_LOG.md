@@ -1,5 +1,65 @@
 # Testing Log
 
+## 2026-10-11 - Public API V1 Optional Issue Evidence
+
+- Extended `ProjectPercentDone::PublicApi::V1.calculate` with optional
+  `include_evidence: true` support for Project Progress History provider
+  consumption.
+- Default `calculate(:project => project)` result shape remains issue-row-free
+  and backward compatible.
+- Evidence mode returns project metadata, grouped metrics, provider metadata,
+  and scalar `issue_evidence` rows for direct project issues.
+- Bumped `redmine_project_percent_done` plugin version from `1.3.18` to
+  `1.3.19` for the staging evidence API build.
+- No database migrations, cron behavior, snapshot collection, history tab, or
+  current Project % Done calculation semantics were changed.
+- Focused Redmine 6.1.2 validation through the shared
+  `redmine-plugin-test-runtime`:
+  - Public API V1 test:
+    `18 runs`, `172 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Full Redmine 6.1.2 plugin suite passed after the final evidence-scope
+  adjustment:
+  `153 runs`, `867 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Full Redmine 6.1.2 plugin suite passed again after the `1.3.19` version
+  bump:
+  `153 runs`, `867 assertions`, `0 failures`, `0 errors`, `0 skips`.
+- Staging package created and inspected:
+  `release_packages/redmine_project_percent_done-1.3.19-staging-20261011-evidence-api.zip`.
+  Package size: `338725` bytes. SHA-256:
+  `E419160AFEC56D458DFC8E95E596A80410FD3BCD6CED67A133C7D6A0F35F4C11`.
+  Package inspection confirmed a single `redmine_project_percent_done/`
+  top-level directory with `init.rb`, version `1.3.19`, and no `.git`,
+  `.codex`, `.agents`, `release_packages`, `tmp`, `log`, `vendor`, or
+  `.bundle` entries.
+- User-run staging validation completed successfully on GCR staging:
+  - UI smoke test passed for project progress, Project Progress History pages,
+    and plugin settings pages.
+  - PPH evidence write validation created daily operational snapshots for
+    `2026-10-11`.
+  - Read-only DB verification confirmed recent snapshots with
+    `source_version=1.3.19`, `evidence_schema=1.0`, and issue evidence rows
+    persisted, including snapshot IDs `2278` through `2287`.
+- Production package promoted byte-for-byte from the staging-approved package:
+  `release_packages/redmine_project_percent_done-1.3.19-production-20261011-evidence-api.zip`.
+  Package size: `338725` bytes. SHA-256:
+  `E419160AFEC56D458DFC8E95E596A80410FD3BCD6CED67A133C7D6A0F35F4C11`.
+- User-run production validation completed successfully on GCR production:
+  - Production install script ended with
+    `SUCCESS: PPD 1.3.19 and PPH 0.2.2 installed on production`.
+  - UI smoke test passed for project pages and Project Progress History pages;
+    no HTTP 500 errors were observed.
+  - Production evidence collection completed successfully with PPH Run ID `84`,
+    `54` projects processed, `54` daily operational snapshots created, `0`
+    failed or unavailable, and notification email delivered.
+  - Read-only DB verification confirmed recent production snapshots with
+    `source_version=1.3.19`, `evidence_schema=1.0`, and issue evidence rows
+    persisted, including snapshot IDs `2249` through `2258`.
+  - The weekly official timeline row for `2026-10-11` may show `missing` on
+    `2026-10-11` because the daily operational snapshot is present but the
+    weekly official promotion for `2026-10-05` through `2026-10-11` is not due
+    until the next capture day.
+- Release state: `production-approved`.
+
 ## 2026-10-07 - 1.3.18 Staging CSS Asset Hotfix
 
 - Staging validation of

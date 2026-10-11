@@ -5,9 +5,12 @@
 `ProjectPercentDone::PublicApi::V1` is a versioned, in-process API for Redmine
 plugins that need aggregate project progress and estimate-coverage data.
 
-It is not a REST authorization mechanism. It exposes no issue records, issue
-rows, or issue IDs. Live calculation creates no settings, cache rows, or other
-persistence. Historical methods read official snapshots captured by this plugin.
+It is not a REST authorization mechanism. By default it exposes no issue
+records, issue rows, or issue IDs. Callers that explicitly request calculation
+evidence receive per-issue scalar evidence rows intended for trusted in-process
+provider integrations such as Project Progress History. Live calculation creates
+no settings, cache rows, or other persistence. Historical methods read official
+snapshots captured by this plugin.
 
 ## Versions
 
@@ -104,6 +107,93 @@ warnings
 A valid `0%` has `progress_available == true`. When progress is unavailable,
 both percentage values are `nil`; `unavailable_reason` is
 `no_eligible_issues` or `no_usable_weight`.
+
+## Optional Calculation Evidence
+
+Trusted in-process consumers can request issue-level calculation evidence:
+
+```ruby
+result = ProjectPercentDone::PublicApi::V1.calculate(
+  :project => project,
+  :include_evidence => true
+)
+
+payload = result.to_h
+```
+
+When `include_evidence` is omitted or false, the result shape is unchanged and
+does not include issue evidence. When true, the result includes the normal
+project-level fields plus:
+
+```text
+project_id
+metrics
+provider_metadata
+issue_evidence
+```
+
+`metrics` contains grouped aggregate values for snapshot consumers, including
+`total_spent_hours`, issue counts, estimate counts, weights, and
+`known_weight_percent`.
+
+`provider_metadata` includes:
+
+```text
+evidence_schema_version
+contract_name
+contract_version
+plugin_version
+algorithm_version
+calculation_mode
+issue_scope
+closed_issue_mode
+unestimated_issue_mode
+hours_weighted
+non_progress_status_scope
+non_progress_status_ids
+non_progress_status_names
+non_progress_tracker_scope
+non_progress_tracker_ids
+non_progress_tracker_names
+```
+
+Each `issue_evidence` row contains scalar fields only:
+
+```text
+issue_id
+project_id
+subject
+status_id
+status_name
+tracker_id
+tracker_name
+assigned_to_id
+assigned_to_login
+assigned_to_firstname
+assigned_to_lastname
+assigned_to_display_name
+assigned_to_mail
+done_ratio
+estimated_hours
+spent_hours
+applied_weight
+included_in_progress
+exclusion_reason
+parent_id
+is_parent
+children_count
+is_closed
+closed_on
+notes
+```
+
+`done_ratio` is the effective value used by the calculation. For included rows,
+`exclusion_reason` is `"none"`. For excluded rows it is a stable reason string
+such as `"parent_issue_excluded"`, `"non_progress_status"`,
+`"non_progress_tracker"`, `"non_progress_status_and_tracker"`,
+`"unestimated_issue_ignored"`, or `"not_in_calculation_scope"`. `notes`
+contains string markers for calculation adjustments, for example closed issues
+treated as 100% or status-default done ratio usage.
 
 ## Counts and Coverage
 
@@ -288,10 +378,12 @@ payload[:warnings] << :local_only
 
 ## Compatibility and Performance
 
-The live public calculation uses the calculator's summary mode, preloads
+The default live public calculation uses the calculator's summary mode, preloads
 required status data, does not build issue breakdown rows, and does not include
-subprojects. Historical methods read plugin-owned official snapshots only.
-Existing HTML and REST behavior remains independent of this API.
+subprojects. Evidence mode uses the calculator's details mode to build scalar
+issue evidence rows for direct project issues only. Historical methods read
+plugin-owned official snapshots only. Existing HTML and REST behavior remains
+independent of this API.
 
 Representative staging runtimes must be recorded during release acceptance;
 they cannot be established from the standalone plugin source tree.

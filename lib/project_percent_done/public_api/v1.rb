@@ -31,11 +31,12 @@ module ProjectPercentDone
           )
         end
 
-        def calculate(project:)
+        def calculate(project:, include_evidence: false)
           validate_project!(project)
-          calculation = ProjectPercentDone::ProjectProgressCalculator.new(project, :mode => :summary).call
+          calculation_mode = include_evidence ? :details : :summary
+          calculation = ProjectPercentDone::ProjectProgressCalculator.new(project, :mode => calculation_mode).call
 
-          Result.new(
+          attributes = {
             :progress_available => calculation.total_weight.positive?,
             :unavailable_reason => unavailable_reason(calculation),
             :raw_percent_done => calculation.total_weight.positive? ? calculation.raw_percent_done : nil,
@@ -66,7 +67,18 @@ module ProjectPercentDone
             :unestimated_issue_mode => ProjectPercentDone::Settings.unestimated_issue_mode,
             :hours_weighted => hours_weighted?,
             :warnings => public_warnings(calculation)
-          )
+          }
+
+          if include_evidence
+            attributes.merge!(
+              :project_id => project.id,
+              :metrics => evidence_metrics(calculation, project),
+              :provider_metadata => evidence_provider_metadata(calculation),
+              :issue_evidence => issue_evidence(calculation, project)
+            )
+          end
+
+          Result.new(:include_evidence => include_evidence, **attributes)
         end
 
         def history_capabilities
@@ -158,6 +170,107 @@ module ProjectPercentDone
           warnings << :all_issues_unestimated if calculation.eligible_issue_count.positive? && calculation.estimated_eligible_issue_count.zero?
           warnings << :no_usable_weight if calculation.eligible_issue_count.positive? && !calculation.total_weight.positive?
           warnings
+        end
+
+        def evidence_metrics(calculation, project)
+          spent_hours_by_issue = spent_hours_by_issue_id(project)
+
+          {
+            :total_spent_hours => spent_hours_by_issue.values.sum,
+            :all_project_issue_count => calculation.all_project_issue_count,
+            :eligible_issue_count => calculation.eligible_issue_count,
+            :included_issue_count => calculation.included_issue_count,
+            :estimated_eligible_issue_count => calculation.estimated_eligible_issue_count,
+            :unestimated_eligible_issue_count => calculation.unestimated_eligible_issue_count,
+            :ignored_unestimated_issue_count => calculation.ignored_unestimated_issue_count,
+            :excluded_parent_issue_count => calculation.excluded_parent_issue_count,
+            :excluded_non_progress_issue_count => calculation.excluded_non_progress_issue_count,
+            :known_estimated_hours => calculation.known_estimated_hours,
+            :imputed_weight => calculation.imputed_weight,
+            :total_applied_weight => calculation.total_weight,
+            :known_weight_percent => known_weight_percent(calculation)
+          }
+        end
+
+        def evidence_provider_metadata(calculation)
+          {
+            :evidence_schema_version => '1.0',
+            :contract_name => CONTRACT_NAME,
+            :contract_version => CONTRACT_VERSION,
+            :plugin_version => ProjectPercentDone::PLUGIN_VERSION,
+            :algorithm_version => ProjectPercentDone::ALGORITHM_VERSION,
+            :calculation_mode => 'live',
+            :issue_scope => ProjectPercentDone::Settings.issue_scope,
+            :closed_issue_mode => ProjectPercentDone::Settings.closed_issue_mode,
+            :unestimated_issue_mode => ProjectPercentDone::Settings.unestimated_issue_mode,
+            :hours_weighted => hours_weighted?,
+            :non_progress_status_scope => ProjectPercentDone::Settings.non_progress_status_scope,
+            :non_progress_status_ids => ProjectPercentDone::Settings.non_progress_status_ids,
+            :non_progress_status_names => calculation.non_progress_status_names,
+            :non_progress_tracker_scope => ProjectPercentDone::Settings.non_progress_tracker_scope,
+            :non_progress_tracker_ids => ProjectPercentDone::Settings.non_progress_tracker_ids,
+            :non_progress_tracker_names => calculation.non_progress_tracker_names
+          }
+        end
+
+        def issue_evidence(calculation, project)
+          rows = calculation.included_rows + calculation.not_included_rows
+          spent_hours_by_issue = spent_hours_by_issue_id(project)
+          children_count_by_parent = children_count_by_parent_id(rows, project)
+
+          rows.sort_by(&:issue_id).map do |row|
+            issue = row.issue
+            assigned_to = issue.assigned_to
+
+            {
+              :issue_id => issue.id,
+              :project_id => issue.project_id,
+              :subject => issue.subject,
+              :status_id => issue.status_id,
+              :status_name => row.status_name,
+              :tracker_id => issue.tracker_id,
+              :tracker_name => issue.tracker && issue.tracker.name,
+              :assigned_to_id => assigned_to && assigned_to.id,
+              :assigned_to_login => assigned_to && assigned_to.login,
+              :assigned_to_firstname => assigned_to && assigned_to.firstname,
+              :assigned_to_lastname => assigned_to && assigned_to.lastname,
+              :assigned_to_display_name => assigned_to && assigned_to.name,
+              :assigned_to_mail => assigned_to && assigned_to.mail,
+              :done_ratio => row.effective_done_ratio,
+              :estimated_hours => issue.estimated_hours && issue.estimated_hours.to_f,
+              :spent_hours => spent_hours_by_issue.fetch(issue.id, 0.0),
+              :applied_weight => row.applied_weight,
+              :included_in_progress => row.included,
+              :exclusion_reason => row.included ? 'none' : row.reason.to_s,
+              :parent_id => issue.parent_id,
+              :is_parent => children_count_by_parent.key?(issue.id),
+              :children_count => children_count_by_parent.fetch(issue.id, 0),
+              :is_closed => issue_closed?(issue),
+              :closed_on => issue.closed_on,
+              :notes => row.notes.map(&:to_s)
+            }
+          end
+        end
+
+        def spent_hours_by_issue_id(project)
+          issue_ids = Issue.where(:project_id => project.id).pluck(:id)
+          return {} if issue_ids.empty?
+
+          TimeEntry.where(:issue_id => issue_ids).group(:issue_id).sum(:hours).transform_values(&:to_f)
+        end
+
+        def children_count_by_parent_id(rows, project)
+          issue_ids = rows.map(&:issue_id)
+          return {} if issue_ids.empty?
+
+          Issue.where(:project_id => project.id, :parent_id => issue_ids).group(:parent_id).count
+        end
+
+        def issue_closed?(issue)
+          return issue.closed? if issue.respond_to?(:closed?)
+          return issue.status.is_closed? if issue.status
+
+          false
         end
 
         def normalize_period_type!(period_type)

@@ -167,6 +167,8 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
       payload = result.to_h
 
       refute_includes payload.keys, :included_issue_ids
+      refute_includes payload.keys, :issue_evidence
+      refute_includes payload.keys, :provider_metadata
       refute_includes payload.values, issue
       assert_includes payload.keys, :non_progress_status_ids
       assert_includes payload.keys, :non_progress_tracker_scope
@@ -177,6 +179,93 @@ class ProjectPercentDone::PublicApi::V1Test < ActiveSupport::TestCase
 
       payload[:warnings] << :copy_changed
       refute_includes result.warnings, :copy_changed
+    end
+  end
+
+  def test_calculate_with_evidence_exposes_pph_friendly_issue_rows
+    included = create_test_issue(
+      :subject => 'Included API evidence task',
+      :done_ratio => 80,
+      :estimated_hours => 16
+    )
+    parent = create_test_issue(
+      :subject => 'Parent API evidence task',
+      :done_ratio => 100,
+      :estimated_hours => 24
+    )
+    child = create_test_issue(
+      :subject => 'Child API evidence task',
+      :parent_issue_id => parent.id,
+      :done_ratio => 20,
+      :estimated_hours => 4
+    )
+    TimeEntry.generate!(:issue => included, :hours => 5.5, :spent_on => Date.new(2026, 10, 1))
+
+    with_project_percent_done_settings({}) do
+      result = ProjectPercentDone::PublicApi::V1.calculate(:project => test_project, :include_evidence => true)
+      payload = result.to_h
+
+      assert_equal test_project.id, payload[:project_id]
+      assert_equal true, payload[:progress_available]
+      assert_equal 68.0, payload[:raw_percent_done]
+      assert_equal 68, payload[:display_percent_done]
+      assert_equal 100.0, payload[:estimate_coverage_percent]
+      assert_equal 5.5, payload[:metrics][:total_spent_hours]
+      assert_equal '1.0', payload[:provider_metadata][:evidence_schema_version]
+      assert_equal ProjectPercentDone::ALGORITHM_VERSION, payload[:provider_metadata][:algorithm_version]
+      assert_equal 3, payload[:issue_evidence].size
+
+      included_row = payload[:issue_evidence].detect { |row| row[:issue_id] == included.id }
+      assert_equal included.project_id, included_row[:project_id]
+      assert_equal 'Included API evidence task', included_row[:subject]
+      assert_equal included.status_id, included_row[:status_id]
+      assert_equal included.status.name, included_row[:status_name]
+      assert_equal included.tracker_id, included_row[:tracker_id]
+      assert_equal included.tracker.name, included_row[:tracker_name]
+      assert_nil included_row[:assigned_to_id]
+      assert_equal 80.0, included_row[:done_ratio]
+      assert_equal 16.0, included_row[:estimated_hours]
+      assert_equal 5.5, included_row[:spent_hours]
+      assert_equal 16.0, included_row[:applied_weight]
+      assert_equal true, included_row[:included_in_progress]
+      assert_equal 'none', included_row[:exclusion_reason]
+      assert_nil included_row[:parent_id]
+      assert_equal false, included_row[:is_parent]
+      assert_equal 0, included_row[:children_count]
+      assert_equal false, included_row[:is_closed]
+      assert_nil included_row[:closed_on]
+      assert_equal [], included_row[:notes]
+
+      parent_row = payload[:issue_evidence].detect { |row| row[:issue_id] == parent.id }
+      assert_equal false, parent_row[:included_in_progress]
+      assert_equal 'parent_issue_excluded', parent_row[:exclusion_reason]
+      assert_equal true, parent_row[:is_parent]
+      assert_equal 1, parent_row[:children_count]
+
+      child_row = payload[:issue_evidence].detect { |row| row[:issue_id] == child.id }
+      assert_equal true, child_row[:included_in_progress]
+      assert_equal parent.id, child_row[:parent_id]
+    end
+  end
+
+  def test_evidence_payload_returns_defensive_nested_copies
+    issue = create_test_issue(:done_ratio => 50, :estimated_hours => 5)
+
+    with_project_percent_done_settings({}) do
+      result = ProjectPercentDone::PublicApi::V1.calculate(:project => test_project, :include_evidence => true)
+      payload = result.to_h
+
+      assert result.provider_metadata.frozen?
+      assert result.issue_evidence.frozen?
+      assert result.issue_evidence.first.frozen?
+
+      payload[:provider_metadata][:algorithm_version] = 'changed'
+      payload[:issue_evidence].first[:subject] = 'Changed locally'
+      payload[:issue_evidence] << { :issue_id => -1 }
+
+      assert_equal ProjectPercentDone::ALGORITHM_VERSION, result.provider_metadata[:algorithm_version]
+      assert_equal issue.subject, result.issue_evidence.first[:subject]
+      assert_equal 1, result.issue_evidence.size
     end
   end
 
