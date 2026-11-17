@@ -16,10 +16,11 @@ snapshots captured by this plugin.
 
 | Version | Value |
 |---|---|
-| Plugin release | `1.3.17` |
+| Plugin release | `1.3.19` |
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
 | Calculation algorithm | `1.1` |
+| Optional evidence schema | `1.0` |
 
 The algorithm version identifies calculation semantics independently from the
 plugin release. Fields may be added compatibly to V1, but breaking a field's
@@ -157,7 +158,8 @@ non_progress_tracker_ids
 non_progress_tracker_names
 ```
 
-Each `issue_evidence` row contains scalar fields only:
+Each `issue_evidence` row contains scalar issue fields and a `notes` array of
+string markers, without ActiveRecord objects:
 
 ```text
 issue_id
@@ -195,13 +197,21 @@ such as `"parent_issue_excluded"`, `"non_progress_status"`,
 contains string markers for calculation adjustments, for example closed issues
 treated as 100% or status-default done ratio usage.
 
+Evidence schema `1.0` is reported in `provider_metadata`. Evidence uses the
+project-wide calculation scope, including issues private to the current user,
+and includes assignee identity/contact fields. Consumers must enforce their own
+authorization before exposing this payload in a UI, export, or external API.
+The `include_evidence` option is available only on this in-process method; it
+does not change the REST endpoint.
+
 ## Counts and Coverage
 
 All issue counts are for issues belonging directly to the project.
 They use the plugin's project-wide calculation scope and are not filtered by
-the current user's issue visibility. The public API exposes aggregate values
-only; per-issue visibility filtering applies to the Redmine UI detail tables
-and diagnostic CSV row exports.
+the current user's issue visibility. Default live API calls expose aggregates
+only; explicit evidence calls also expose issue rows in that project-wide scope.
+Per-issue visibility filtering applies to the Redmine UI detail tables and
+diagnostic CSV row exports, not to trusted in-process evidence.
 
 - Eligible counts are measured after leaf-scope parent exclusion and before
   non-progress status/tracker exclusion and missing-estimate handling.
@@ -236,6 +246,15 @@ known_estimated_hours / total_applied_weight * 100
 - `all_issues_unestimated`
 
 ## Historical Capabilities
+
+These retained methods describe PPD-owned legacy history. Project Progress
+History consumes PPD's live calculation API and owns its own history storage;
+the methods below do not query or proxy that separate plugin's snapshots.
+When Project Progress History is available and either its collection or history
+page is enabled, PPD's coexistence guard disables legacy collection and reports
+`history_enabled == false`. Existing PPD snapshots remain readable through the
+historical methods. Legacy tables and settings are retained for compatibility
+and rollback; see the [cleanup inventory](PROJECT_PERCENT_DONE_CLEANUP_INVENTORY.md).
 
 ```ruby
 history = ProjectPercentDone::PublicApi::V1.history_capabilities

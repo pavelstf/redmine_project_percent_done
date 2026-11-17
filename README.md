@@ -4,6 +4,10 @@ Redmine Project Percent Done calculates an absolute project completion percentag
 
 The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redmine 5.x.
 
+Current release: **1.3.19**, public contract **1.0**, calculation algorithm
+**1.1**, optional evidence schema **1.0**. Redmine 6.1.2 is the validated local
+test target; broader compatibility is an aim rather than fresh certification.
+
 ## Features
 
 - Calculates project `% done` from issues in the current project.
@@ -17,7 +21,14 @@ The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redm
 - Explains the calculation with included and excluded issue tables.
 - Supports English and Bulgarian translations.
 - Provides fallback English translations for the Redmine built-in locale set.
-- Optionally stores daily operational and official weekly progress snapshots.
+- Provides Public API V1 with optional issue-level evidence for trusted integrations.
+
+Legacy history features remain available when Project Progress History is not
+active. In the documented GCR deployment, the separate Project Progress History
+plugin owns history and consumes PPD's live public API. Retained PPD history
+features include:
+
+- Optionally stores daily operational and official weekly/monthly progress snapshots.
 - Shows weekly history on a dedicated project tab as a gap-aware graph and paginated table.
 - Supports project-type scope, aggregate/detail retention, diagnostics, and email reports.
 - Can collect production history in shadow mode while hiding project history pages from users.
@@ -129,7 +140,23 @@ Administration settings include compact help icons with localized English and
 Bulgarian guidance. The help tooltips support mouse hover, keyboard focus, and
 tap without using native `title` tooltips, avoiding duplicate tooltip display.
 
-Historical progress settings include:
+### Legacy history and coexistence
+
+PPD keeps its legacy history implementation, settings, tables, and migrations
+for compatibility and rollback. When Project Progress History is available and
+either its collection or history page is enabled, PPD suppresses its legacy
+history UI and guards collection, email, admin actions, and maintenance tasks.
+Guarded settings saves preserve legacy values while forcing PPD's history and
+history email enable flags off. Live calculation and the provider API remain
+available. PPD does not require Project Progress History for live calculation.
+
+The settings and collector instructions below apply to PPD-owned legacy history.
+When Project Progress History is active, use that plugin's history settings and
+operational instructions. Do not remove legacy tables as part of an ordinary
+upgrade; see the [cleanup inventory](docs/PROJECT_PERCENT_DONE_CLEANUP_INVENTORY.md)
+for the retained compatibility boundary.
+
+Legacy historical progress settings include:
 
 - master enable switch, disabled by default;
 - project-only or project-and-issue detail;
@@ -205,9 +232,9 @@ Example response:
 
 ## Public Integration API
 
-Version 1.1.0 provides a versioned in-process aggregate API for other Redmine
-plugins. It is loaded during normal plugin initialization and does not depend
-on the optional REST endpoint:
+Public API V1 provides a versioned in-process API for other Redmine plugins.
+It is loaded during normal plugin initialization and does not depend on the
+optional REST endpoint:
 
 ```ruby
 capabilities = ProjectPercentDone::PublicApi::V1.capabilities
@@ -219,8 +246,24 @@ result.display_percent_done
 result.estimate_coverage_percent
 ```
 
-The API is live and non-persistent. It returns immutable value objects with
-aggregate counts and weights only; it does not expose issues or issue IDs.
+Live calculation is non-persistent and returns immutable value objects. Default
+calls return aggregate counts and weights without issue rows or issue IDs.
+Since 1.3.19, trusted consumers can opt into issue-level calculation evidence:
+
+```ruby
+result = ProjectPercentDone::PublicApi::V1.calculate(
+  :project => project,
+  :include_evidence => true
+)
+payload = result.to_h
+payload[:provider_metadata][:evidence_schema_version] # => "1.0"
+payload[:issue_evidence]
+```
+
+Evidence adds `project_id`, grouped `metrics`, `provider_metadata`, and scalar
+issue evidence rows. The default result shape and calculation algorithm remain
+unchanged. This option belongs to the in-process API; it does not add an evidence
+option to the REST endpoint.
 See [Public API V1](docs/PUBLIC_API_V1.md) for the complete contract.
 
 ## Security Note
@@ -229,7 +272,11 @@ The project percentage is calculated from all issues in the project, regardless 
 
 The details page shows issue rows only for issues visible to the current user. The final percentage and totals still represent the entire project and all applicable issues.
 
-Historical aggregate graph/table access is controlled by the history visibility
+In-process evidence uses project-wide scope and can contain private issue data
+and assignee contact information. Consumers must enforce authorization before
+displaying, exporting, or otherwise exposing it to users.
+
+Legacy PPD historical aggregate graph/table access is controlled by the history visibility
 setting. The default is hidden from project UI, which allows production shadow
 collection. When enabled for users, access still follows current project
 visibility. Historical issue rows and irreversible per-project purge are
@@ -250,6 +297,7 @@ For very large Redmine installations, future versions may add persistent caching
 
 ## Protected staging demo history
 
+This retained PPD task is guarded when Project Progress History is active.
 The staging-only `redmine:project_percent_done:staging_demo` task can create 16
 weeks of synthetic history in the private `ppd-history-test` project. It
 requires `CONFIRM=STAGING_DEMO_HISTORY`, verifies the configured staging host,
@@ -267,13 +315,27 @@ project or any project containing tasks without the `[PPD DEMO]` prefix.
 
 ## Cron configuration
 
-When historical collection is enabled, Administration displays a generated
+For PPD-owned legacy history, when collection is enabled, Administration displays a generated
 daily rake command and a complete hosting cron command for the current Redmine
 root, Rails environment, and detected Ruby virtual environment. The recommended
 schedule is `5 0 * * *`. The daily collector also applies issue-detail
 retention, so a separate cleanup cron is not required.
 
 ## Testing
+
+For the shared local Redmine 6.1.2 runtime, read `AGENTS.md` and
+`.redmine-test.yml`, then use the repository wrappers:
+
+```powershell
+& .\scripts\setup_redmine_test_runtime.ps1
+& .\scripts\run_redmine_plugin_tests.ps1
+```
+
+Setup creates or reuses the external runtime and links this checkout. After a
+move, inspect the existing plugin junction before testing: setup refuses a link
+to another checkout, so correct that junction first without deleting its target.
+Keep the runtime, Ruby, gems, and databases outside this repository. See
+[Local test runtime](docs/LOCAL_TEST_RUNTIME.md) for focused-test commands.
 
 The plugin tests are intended to run inside a Redmine test environment:
 
@@ -290,8 +352,12 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 
 ## Documentation
 
+- [Current project handoff](HANDOFF.md)
 - [Calculation behavior](docs/CALCULATION.md)
 - [Public API V1](docs/PUBLIC_API_V1.md)
+- [Current release handoff 1.3.19](docs/HANDOFF_1.3.19.md)
+- [History coexistence cleanup inventory (2026-10-07)](docs/PROJECT_PERCENT_DONE_CLEANUP_INVENTORY.md)
+- [Production runbook for PPD 1.3.19 / PPH 0.2.2 release](docs/PRODUCTION_RUNBOOK_1.3.19_0.2.2_PPD_EVIDENCE.md)
 - [Historical API integration brief 1.3.4](docs/API_INTEGRATION_BRIEF_1.3.4.md)
 - [Historical progress snapshots V1 specification](docs/HISTORICAL_PROGRESS_SNAPSHOTS_SPEC.md)
 - [Handoff 1.3.4](docs/HANDOFF_1.3.4.md)

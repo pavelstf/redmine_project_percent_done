@@ -2,6 +2,10 @@
 
 Date: 2026-10-07
 
+Historical inventory: branch, commit, version, and working-tree statements below
+describe 2026-10-07. For current continuation state and relocation validation,
+read [the root handoff](../HANDOFF.md) and [release 1.3.19](HANDOFF_1.3.19.md).
+
 This inventory captures the safe cleanup boundary after
 `redmine_project_progress_history` became the production owner of progress
 history.

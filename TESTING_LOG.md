@@ -1,5 +1,21 @@
 # Testing Log
 
+## 2026-11-17 - Relocation validation and documentation closeout
+
+- Repointed the external Redmine 6.1.2 plugin junction to the relocated checkout.
+- Shared setup reused Ruby 3.3.11 and Bundler 2.5.22; no gems were installed.
+- Full suite with normal test database preparation, exit code 0:
+  `153 runs`, `867 assertions`, `0 failures`, `0 errors`, `0 skips` in
+  `41.582332` seconds. Known duplicate-constant warnings were non-fatal.
+- Static checks passed for 61 Ruby/Rake/RSB files, 50 locale YAML files, the test
+  manifest, 10 ERB templates, and repository PowerShell scripts.
+- README and Public API V1 documentation were reconciled with 1.3.19 evidence
+  and coexistence behavior. Documentation-only changes do not alter the tested
+  application code. Local links and Markdown fences were checked.
+- Existing 1.3.19 staging/production archives were rehashed: both 338725 bytes,
+  SHA-256 `E419160AFEC56D458DFC8E95E596A80410FD3BCD6CED67A133C7D6A0F35F4C11`.
+- No new package, version, tag, or server deployment was created.
+
 ## 2026-10-11 - Public API V1 Optional Issue Evidence
 
 - Extended `ProjectPercentDone::PublicApi::V1.calculate` with optional
