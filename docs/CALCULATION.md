@@ -6,7 +6,22 @@ Each project is calculated independently.
 
 Subprojects are not included.
 
-By default, the plugin includes only leaf issues in the current project. A parent issue is excluded when it has at least one child issue in the same project. This prevents double counting the same work through both a parent issue and its children.
+Algorithm 1.2 includes only direct-project global leaf issues. Every parent is
+excluded, even if all its children belong to another project. Children outside
+the project are not imported. This aligns leaf scope with Project Budget and
+prevents a parent's Redmine-derived progress from importing another project's
+progress. Algorithm 1.1 used same-project children to identify parents.
+
+QA build r2 safely excludes issues with incomplete NULL nested-set coordinates
+instead of raising during the leaf check. It does not repair or rewrite the
+source hierarchy. Normal-data leaf semantics and algorithm version 1.2 remain
+unchanged.
+
+Weights and weighted progress are aggregated as exact Rational values derived
+from the decimal estimates, including average-estimate imputation. Integer
+rounding is applied before conversion to public Float values. This avoids
+binary floating-point artifacts at floor/ceil boundaries without snapping
+legitimate nearby values. Existing history is not recalculated.
 
 Administrators can also configure non-progress statuses and non-progress
 trackers. Matching direct leaf issues are excluded before numerator and

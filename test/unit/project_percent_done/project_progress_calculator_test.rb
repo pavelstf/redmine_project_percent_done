@@ -44,7 +44,7 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
     end
   end
 
-  def test_keeps_parent_issue_when_child_is_in_another_project
+  def test_excludes_parent_issue_when_child_is_in_another_project
     other_project = Project.create!(
       :name => "Other Project Percent Done Test #{SecureRandom.hex(4)}",
       :identifier => "ppd-other-#{SecureRandom.hex(4)}",
@@ -58,8 +58,13 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
         result = ProjectPercentDone::ProjectProgressCalculator.new(test_project).call
 
         assert_equal 0, result.percent_done
-        assert_equal 1, result.issue_count
-        assert_equal 10.0, result.total_weight
+        assert_equal 0, result.issue_count
+        assert_equal 0.0, result.total_weight
+        assert_equal 1, result.excluded_parent_issue_count
+        assert_equal :parent_issue_excluded, result.not_included_rows.first.reason
+        summary = ProjectPercentDone::ProjectProgressCalculator.new(test_project, :mode => :summary).call
+        assert_equal result.percent_done, summary.percent_done
+        assert_equal result.excluded_parent_issue_count, summary.excluded_parent_issue_count
       end
     end
   end
@@ -470,6 +475,7 @@ class ProjectPercentDone::ProjectProgressCalculatorTest < ActiveSupport::TestCas
   end
 
   private
+
 
   def create_tracker(name)
     tracker = Tracker.create!(:name => name, :default_status => open_status)

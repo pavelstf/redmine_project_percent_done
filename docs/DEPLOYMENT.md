@@ -28,6 +28,11 @@ touch tmp/restart.txt
 
 ## Rollback
 
+Migration 002 is intentionally irreversible in 1.3.20: its `down` refuses before
+any schema changes, preserving weekly/monthly rows with the same period end.
+For an ordinary rollback restore plugin code/assets and restart; keep the
+history schema and data. A DB restoration is a separate maintenance operation.
+
 Remove the plugin directory and restart Redmine:
 
 ```bash

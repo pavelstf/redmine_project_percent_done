@@ -1,5 +1,53 @@
 # Project Handoff
 
+## Current continuation state — 2026-11-25 / QA 1.3.20 r2
+
+This section supersedes the historical continuation records below.
+
+- R-01..R-03 from repeat QA are addressed: NULL hierarchy bounds are safely
+  excluded; source text is LF with a Git policy; historical 1.3.19 changelog
+  restored. No data repair or historical snapshot rewrite was performed.
+- Plugin/algorithm remain 1.3.20/1.2. Build identifier: r2, dated 2026-11-25.
+- Branch codex/qa-1.3.20; local immutable QA ref `qa-v1.3.20-r2` identifies
+  the tested implementation. Resolve its exact commit from Git or the package
+  manifest. QA ref is separate from production release approval.
+- Focused R-01 regression suite: 8 runs, 199 assertions, 0 failures/errors/skips.
+  Full suite: 165 runs, 1084 assertions, 0 failures/errors/skips, exit 0.
+  Details are recorded in TESTING_LOG.md and the bundle.
+- Rebuild: `python scripts/build_qa_package.py --ref qa-v1.3.20-r2` after the
+  complete suite log/exitcode and benchmark exist in output/qa/1.3.20-r2/.
+  Builder reads committed Git blobs, requires LF source and workspace equality,
+  checks successful test process status and fixes ZIP entry timestamps/modes.
+- Previous ZIPs and QA input PDFs are preserved. Generated logs/artifacts remain
+  ignored; input `QA reports/` remains untracked and outside the QA commit.
+- No remote push, server deployment or production tag is part of this task.
+- Environment-specific staging gates from docs/QA_1.3.20.md remain pending.
+
+## Current continuation state — 2026-11-24 / QA 1.3.20
+
+This section supersedes the older continuation and relocation records below.
+
+- Branch `codex/qa-1.3.20`, based on `6c76e30`; implementation is local and
+  uncommitted. Do not infer a release commit/tag from the base hash.
+- Plugin 1.3.20, algorithm 1.2, public contract 1.0, evidence schema 1.0.
+- PPD-01..08 remediation and acceptance criteria: `docs/QA_1.3.20.md`.
+- User explicitly approved excluding all parents, including cross-project
+  parents. Exact Rational aggregation fixes floor/ceil without arbitrary epsilon.
+  Evidence hierarchy is consistent; direct-project row scope is preserved.
+- Legacy history remains intact. Migration 002 down refuses before changing
+  schema/data; ordinary rollback restores code/assets and retains tables.
+- Focused QA tests: 6 runs / 172 assertions; full suite: 162 runs / 1054 assertions;
+  both 0 failures, 0 errors, 0 skips, exit 0. See TESTING_LOG.md.
+- QA bundle builder: `scripts/build_qa_package.py`. Runtime-only install ZIP
+  and full source ZIP are separate, with per-file hashes and a working snapshot
+  digest. Private ignored files and input QA reports are not packaged.
+- QA input PDF remains untracked in `QA reports/`; do not remove it or stage
+  it incidentally. Generated logs/packages remain ignored.
+- Synthetic CPU performance improved for large datasets; MySQL/MariaDB,
+  actual PB/PPH, deployed UI, SMTP/cron and real-project performance are still
+  explicit staging/re-QA gates. No server deployment has been performed.
+- No automatic commit/push/tag is part of this QA preparation request.
+
 ## Current continuation state — 2026-11-17
 
 This section supersedes the pre-relocation record below. That record is retained

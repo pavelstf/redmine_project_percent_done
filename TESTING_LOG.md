@@ -1,5 +1,57 @@
 # Testing Log
 
+## 2026-11-25 - 1.3.20 QA build r2 (R-01..R-03)
+
+- Fixed nil lft/rgt leaf evaluation without repairing source hierarchy. Added
+  actual test DB NULL combinations, mixed/invalid-only project cases, API/evidence
+  and real Overview HTTP coverage. Normal-data algorithm remains 1.2.
+- Focused regression run: `8 runs`, `199 assertions`, `0 failures`, `0 errors`,
+  `0 skips`, exit 0 (4.220883 seconds).
+- Complete Redmine 6.1.2 suite with normal test DB preparation:
+  `165 runs`, `1084 assertions`, `0 failures`, `0 errors`, `0 skips`, exit 0
+  (18.463325 seconds). Known junction duplicate-constant warnings are non-fatal.
+- Normalized 159 source text files; independent audit of all 191 source text
+  files found zero CR bytes. Git now enforces text=auto/eol=lf. Binary input QA
+  reports, ignored local context, generated logs and prior ZIPs were untouched.
+- Syntax/locale checks passed: 63 Ruby/Rake/RSB files including benchmark tool,
+  50 locale roots, EN/BG key parity, 10 ERB templates and Python build tools.
+- Restored the 1.3.19 changelog entry from its historical release handoff.
+- Local QA ref qa-v1.3.20-r2 identifies the committed build source. Build script
+  reads Git blobs, verifies workspace/ref identity and LF-only text, requires
+  successful complete test exit status, records test-log hash and fixes ZIP
+  metadata for reproducible archives. Package hashes are emitted in the external
+  output/qa/1.3.20-r2/package-verification.json and manifests.
+- Fresh CPU-only 20,000-issue benchmark: summary 415.772ms -> 97.325ms;
+  details 1398.218ms -> 195.247ms versus 1.3.19. No SQL/DB latency claim.
+- QA source commit/tag are local. No push, deployment or production promotion.
+  MySQL/MariaDB, deployed UI, actual PB/PPH, SMTP/cron and real-project performance
+  remain environment-specific staging gates.
+
+## 2026-11-24 - 1.3.20 repeat QA remediation
+
+- Implemented PPD-01..08 from the QA report; user approved excluding every
+  parent regardless of child project. Algorithm 1.2; public contract/evidence
+  schema remain 1.0. Stored snapshots are not rewritten.
+- Focused QA regressions: `6 runs`, `172 assertions`, `0 failures`, `0 errors`,
+  `0 skips`, exit 0 (3.746918 seconds).
+- Complete Redmine 6.1.2 suite with normal test DB preparation:
+  `162 runs`, `1054 assertions`, `0 failures`, `0 errors`, `0 skips`, exit 0
+  (17.889307 seconds). Admin flash and real SQLite schema/data-preservation
+  regressions are included. Known duplicate-constant warnings were non-fatal.
+- Ruby/Rake/RSB syntax, ERB compilation, 50 locale root checks and EN/BG key
+  parity passed. Standalone packaging/benchmark scripts checked separately.
+- Synthetic calculator benchmark: median of three, 25% parents, fractional
+  estimates, no DB/SQL/request measurement. At 20,000 issues summary changed
+  from 387.500ms to 89.881ms; details from 1422.086ms to 196.195ms. At 2,000
+  issues Rational arithmetic added roughly 2ms summary / 4ms details.
+- Install/source/outer QA ZIPs are separate and independently manifested and
+  verified by scripts/build_qa_package.py. Package evidence is generated under
+  output/qa/1.3.20/package-verification.json, without a source-commit claim for
+  uncommitted changes. Base commit is recorded separately from snapshot hash.
+- MySQL/MariaDB, deployed UI, actual PB/PPH integration, SMTP/cron and real
+  representative-project performance remain staging/re-QA gates, not local claims.
+- No new production deployment, release tag, commit or push in this task.
+
 ## 2026-11-17 - Relocation validation and documentation closeout
 
 - Repointed the external Redmine 6.1.2 plugin junction to the relocated checkout.

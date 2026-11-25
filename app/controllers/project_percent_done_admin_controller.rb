@@ -31,8 +31,8 @@ class ProjectPercentDoneAdminController < ApplicationController
     ProjectPercentDone::History::Notifier.deliver_test
     flash[:notice] = l(:text_project_percent_done_history_test_email_sent)
     redirect_to_plugin_settings
-  rescue StandardError => error
-    flash[:error] = error.message
+  rescue StandardError
+    flash[:error] = l(:text_project_percent_done_history_test_email_failed)
     redirect_to_plugin_settings
   end
 

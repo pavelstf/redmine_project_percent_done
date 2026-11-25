@@ -1,4 +1,5 @@
 en:
+  text_project_percent_done_history_test_email_failed: "Test email could not be sent. Check the mail configuration."
   label_project_percent_done: "Project % done"
   label_project_percent_done_details: "Calculation details"
   label_project_percent_done_summary: "Summary"

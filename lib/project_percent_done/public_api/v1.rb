@@ -216,7 +216,7 @@ module ProjectPercentDone
         def issue_evidence(calculation, project)
           rows = calculation.included_rows + calculation.not_included_rows
           spent_hours_by_issue = spent_hours_by_issue_id(project)
-          children_count_by_parent = children_count_by_parent_id(rows, project)
+          children_count_by_parent = children_count_by_parent_id(rows)
 
           rows.sort_by(&:issue_id).map do |row|
             issue = row.issue
@@ -259,11 +259,11 @@ module ProjectPercentDone
           TimeEntry.where(:issue_id => issue_ids).group(:issue_id).sum(:hours).transform_values(&:to_f)
         end
 
-        def children_count_by_parent_id(rows, project)
+        def children_count_by_parent_id(rows)
           issue_ids = rows.map(&:issue_id)
           return {} if issue_ids.empty?
 
-          Issue.where(:project_id => project.id, :parent_id => issue_ids).group(:parent_id).count
+          Issue.where(:parent_id => issue_ids).group(:parent_id).count
         end
 
         def issue_closed?(issue)

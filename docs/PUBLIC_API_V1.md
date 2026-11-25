@@ -16,10 +16,10 @@ snapshots captured by this plugin.
 
 | Version | Value |
 |---|---|
-| Plugin release | `1.3.19` |
+| Plugin release | `1.3.20` |
 | Public contract | `1.0` |
 | Historical contract | `1.0` |
-| Calculation algorithm | `1.1` |
+| Calculation algorithm | `1.2` |
 | Optional evidence schema | `1.0` |
 
 The algorithm version identifies calculation semantics independently from the
@@ -189,6 +189,13 @@ closed_on
 notes
 ```
 
+Algorithm 1.2 excludes all parents, including those with only cross-project
+children. `is_parent` and `children_count` describe direct children across
+projects; evidence rows themselves remain restricted to direct project issues.
+No foreign child identities are added. Field names/types and evidence schema
+1.0 are unchanged; consumers can use `algorithm_version` to identify the scope
+change. Existing snapshots retain their original provenance and values.
+
 `done_ratio` is the effective value used by the calculation. For included rows,
 `exclusion_reason` is `"none"`. For excluded rows it is a stable reason string
 such as `"parent_issue_excluded"`, `"non_progress_status"`,
@@ -213,8 +220,8 @@ only; explicit evidence calls also expose issue rows in that project-wide scope.
 Per-issue visibility filtering applies to the Redmine UI detail tables and
 diagnostic CSV row exports, not to trusted in-process evidence.
 
-- Eligible counts are measured after leaf-scope parent exclusion and before
-  non-progress status/tracker exclusion and missing-estimate handling.
+- Eligible counts are measured after global leaf-scope parent exclusion and
+  non-progress status/tracker exclusion, before missing-estimate handling.
 - `excluded_non_progress_issue_count` counts each excluded direct leaf issue
   once, even when both status and tracker match.
 - Positive `estimated_hours` is estimated; missing, zero, or negative is

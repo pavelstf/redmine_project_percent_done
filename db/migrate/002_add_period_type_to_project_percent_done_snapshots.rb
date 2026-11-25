@@ -28,21 +28,7 @@ class AddPeriodTypeToProjectPercentDoneSnapshots < ActiveRecord::Migration[6.1]
   end
 
   def down
-    if index_exists?(:project_percent_done_snapshots,
-                     [:project_id, :period_type, :period_end],
-                     :name => 'idx_ppd_snapshots_project_period')
-      remove_index :project_percent_done_snapshots,
-                   :name => 'idx_ppd_snapshots_project_period'
-    end
-
-    unless index_exists?(:project_percent_done_snapshots, [:project_id, :period_end],
-                         :name => 'idx_ppd_snapshots_project_period')
-      add_index :project_percent_done_snapshots,
-                [:project_id, :period_end],
-                :unique => true,
-                :name => 'idx_ppd_snapshots_project_period'
-    end
-
-    remove_column :project_percent_done_snapshots, :period_type if column_exists?(:project_percent_done_snapshots, :period_type)
+    raise ActiveRecord::IrreversibleMigration,
+          'Period types preserve weekly/monthly history. Restore plugin code and assets without migrating down; retain the history tables.'
   end
 end

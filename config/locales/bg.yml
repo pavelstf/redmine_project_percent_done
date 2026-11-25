@@ -1,4 +1,5 @@
 bg:
+  text_project_percent_done_history_test_email_failed: "Тестовият имейл не беше изпратен. Проверете настройките за поща."
   label_project_percent_done: "Проект % завършеност"
   label_project_percent_done_details: "Детайли за изчислението"
   label_project_percent_done_summary: "Обобщение"

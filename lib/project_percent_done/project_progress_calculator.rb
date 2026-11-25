@@ -1,3 +1,5 @@
+require 'set'
+
 module ProjectPercentDone
   class ProjectProgressCalculator
     attr_reader :project, :mode
@@ -48,9 +50,9 @@ module ProjectPercentDone
       aggregate_fields[:excluded_non_progress_applied_weight] =
         excluded_non_progress_issues.sum { |issue| diagnostic_weight_for(issue, average_estimate) }
 
-      weighted_sum = 0.0
-      total_weight = 0.0
-      imputed_weight = 0.0
+      weighted_sum = Rational(0)
+      total_weight = Rational(0)
+      imputed_weight = Rational(0)
 
       included_issues.each do |issue|
         weight = weight_for(issue, average_estimate)
@@ -62,27 +64,30 @@ module ProjectPercentDone
 
       aggregate_fields[:included_issue_count] = included_issues.size
       aggregate_fields[:known_estimated_hours] = estimated_issues.sum { |issue| issue.estimated_hours.to_f }
-      aggregate_fields[:imputed_weight] = imputed_weight
+      aggregate_fields[:imputed_weight] = imputed_weight.to_f
 
       included_issue_ids = included_issues.map(&:id)
+      included_id_set = included_issue_ids.to_set
       not_included_issue_ids = all_issue_ids - included_issue_ids
       included_rows = details_mode? ? breakdown_rows_for(included_issues, true, average_estimate) : []
-      not_included_rows = details_mode? ? breakdown_rows_for(all_issues.reject { |issue| included_issue_ids.include?(issue.id) }, false, average_estimate) : []
+      not_included_rows = details_mode? ? breakdown_rows_for(all_issues.reject { |issue| included_id_set.include?(issue.id) }, false, average_estimate) : []
 
       if total_weight <= 0
         return empty_result(:no_weight, all_issue_ids, included_issue_ids, not_included_issue_ids, estimated_issue_count, unestimated_issue_count, included_rows, not_included_rows, aggregate_fields)
       end
 
-      raw_percent_done = (weighted_sum / total_weight) * 100.0
+      # Keep decimal inputs exact through aggregation and rounding. Convert only
+      # at the public boundary, preserving the existing Float result contract.
+      raw_percent_done = (weighted_sum / total_weight) * 100
 
       CalculationResult.new(
         :percent_done => rounded(raw_percent_done),
-        :raw_percent_done => raw_percent_done,
+        :raw_percent_done => raw_percent_done.to_f,
         :issue_count => included_issues.size,
         :not_included_issue_count => not_included_issue_ids.size,
         :estimated_issue_count => estimated_issue_count,
         :unestimated_issue_count => unestimated_issue_count,
-        :total_weight => total_weight,
+        :total_weight => total_weight.to_f,
         :included_issue_ids => included_issue_ids,
         :not_included_issue_ids => not_included_issue_ids,
         :included_rows => included_rows,
@@ -105,7 +110,7 @@ module ProjectPercentDone
         scope.includes(:assigned_to, :status, :tracker).to_a
       else
         scope.includes(:status)
-             .select(:id, :project_id, :parent_id, :tracker_id, :status_id, :done_ratio, :estimated_hours)
+             .select(:id, :project_id, :parent_id, :lft, :rgt, :tracker_id, :status_id, :done_ratio, :estimated_hours)
              .to_a
       end
     end
@@ -113,7 +118,11 @@ module ProjectPercentDone
     def calculation_candidates(all_issues)
       return all_issues unless ProjectPercentDone::Settings.issue_scope == 'leaf_issues_only'
 
-      @parent_issue_ids = all_issues.map(&:parent_id).compact.uniq
+      # Redmine's nested set spans projects. A parent is never a leaf, even if
+      # all of its children belong to other projects.
+      @parent_issue_ids = all_issues.reject do |issue|
+        issue.lft && issue.rgt && issue.rgt == issue.lft + 1
+      end.map(&:id).to_set
       all_issues.reject { |issue| @parent_issue_ids.include?(issue.id) }
     end
 
@@ -159,22 +168,22 @@ module ProjectPercentDone
     def average_estimate_for(estimated_issues)
       return nil if estimated_issues.empty?
 
-      estimated_issues.sum { |issue| issue.estimated_hours.to_f } / estimated_issues.size
+      estimated_issues.sum(Rational(0)) { |issue| Rational(issue.estimated_hours.to_s) } / estimated_issues.size
     end
 
     def weight_for(issue, average_estimate)
-      return 1.0 if ProjectPercentDone::Settings.unestimated_issue_mode == 'equal_weight_all'
-      return issue.estimated_hours.to_f if estimated?(issue)
+      return Rational(1) if ProjectPercentDone::Settings.unestimated_issue_mode == 'equal_weight_all'
+      return Rational(issue.estimated_hours.to_s) if estimated?(issue)
 
       case ProjectPercentDone::Settings.unestimated_issue_mode
       when 'use_average_estimate'
-        average_estimate || 1.0
+        average_estimate || Rational(1)
       when 'use_weight_1'
-        1.0
+        Rational(1)
       when 'ignore'
         nil
       else
-        average_estimate || 1.0
+        average_estimate || Rational(1)
       end
     end
 
@@ -198,7 +207,7 @@ module ProjectPercentDone
           :effective_done_ratio => effective_done_ratio,
           :estimated_hours => issue.estimated_hours,
           :applied_weight => applied_weight,
-          :weighted_value => (effective_done_ratio / 100.0) * applied_weight,
+          :weighted_value => included ? weighted_value_for(issue, weight_for(issue, average_estimate)).to_f : 0.0,
           :reason => included ? nil : not_included_reason(issue),
           :notes => notes_for(issue, included, applied_weight, average_estimate)
         )
@@ -216,7 +225,7 @@ module ProjectPercentDone
     end
 
     def parent_issue_in_project?(issue)
-      Array(@parent_issue_ids).include?(issue.id)
+      @parent_issue_ids && @parent_issue_ids.include?(issue.id)
     end
 
     def non_progress_issue?(issue)
@@ -232,11 +241,11 @@ module ProjectPercentDone
     end
 
     def non_progress_status_ids
-      @non_progress_status_ids ||= ProjectPercentDone::Settings.non_progress_status_ids
+      @non_progress_status_ids ||= ProjectPercentDone::Settings.non_progress_status_ids.to_set
     end
 
     def non_progress_tracker_ids
-      @non_progress_tracker_ids ||= ProjectPercentDone::Settings.non_progress_tracker_ids
+      @non_progress_tracker_ids ||= ProjectPercentDone::Settings.non_progress_tracker_ids.to_set
     end
 
     def notes_for(issue, included, applied_weight, average_estimate)
@@ -249,7 +258,7 @@ module ProjectPercentDone
     end
 
     def weighted_value_for(issue, weight)
-      (done_ratio_for(issue) / 100.0) * weight
+      (Rational(done_ratio_for(issue).to_s) / 100) * weight
     end
 
     def rounded(raw_percent_done)
@@ -282,8 +291,8 @@ module ProjectPercentDone
         :excluded_non_progress_issue_count => excluded_non_progress_issues.size,
         :excluded_non_progress_estimated_hours => excluded_non_progress_issues.select { |issue| estimated?(issue) }.sum { |issue| issue.estimated_hours.to_f },
         :excluded_non_progress_applied_weight => excluded_non_progress_issues.select { |issue| estimated?(issue) }.sum { |issue| issue.estimated_hours.to_f },
-        :non_progress_status_ids => non_progress_status_ids,
-        :non_progress_tracker_ids => non_progress_tracker_ids,
+        :non_progress_status_ids => non_progress_status_ids.to_a,
+        :non_progress_tracker_ids => non_progress_tracker_ids.to_a,
         :non_progress_status_names => ProjectPercentDone::Settings.non_progress_statuses.map(&:name),
         :non_progress_tracker_names => ProjectPercentDone::Settings.non_progress_trackers.map(&:name),
         :ignored_unestimated_issue_count => ProjectPercentDone::Settings.unestimated_issue_mode == 'ignore' ? unestimated_eligible_issues.size : 0,

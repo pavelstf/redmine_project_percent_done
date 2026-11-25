@@ -22,6 +22,21 @@ class ProjectPercentDoneHooksTest < ActionController::TestCase
     end
   end
 
+  def test_overview_remains_available_with_null_nested_set_coordinates
+    invalid = 3.times.map { create_test_issue(:estimated_hours => 100, :done_ratio => 100) }
+    create_test_issue(:estimated_hours => 2, :done_ratio => 70)
+    [[nil, nil], [nil, 2], [1, nil]].zip(invalid).each do |bounds, issue|
+      Issue.where(:id => issue.id).update_all(:lft => bounds[0], :rgt => bounds[1])
+    end
+    with_settings(:issue_done_ratio => 'issue_field') do
+      with_project_percent_done_settings('display_overview' => '1', 'display_sidebar' => '1', 'history_enabled' => '0') do
+        get :show, :params => { :id => test_project.identifier }
+        assert_response :success
+        assert_includes @response.body, '70%'
+      end
+    end
+  end
+
   def test_hook_passes_latest_snapshot_groups_to_dashboard_partial
     older_operational = ProjectPercentDoneSnapshot.create!(
       :project => test_project,

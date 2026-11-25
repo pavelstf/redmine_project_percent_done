@@ -2,6 +2,23 @@ require File.expand_path('../../test_helper', __dir__)
 require Rails.root.join('plugins/redmine_project_percent_done/db/migrate/002_add_period_type_to_project_percent_done_snapshots')
 
 class ProjectPercentDone::MigrationPeriodTypeTest < ActiveSupport::TestCase
+  include ProjectPercentDoneTestSupport
+
+  def test_down_preserves_real_schema_and_same_date_weekly_monthly_rows
+    snapshots = %w[weekly monthly].map do |period|
+      ProjectPercentDoneSnapshot.create!(
+        :project => test_project, :snapshot_kind => 'official', :period_type => period,
+        :period_end => Date.new(2026, 5, 31), :captured_at => Time.current, :project_state => 'active'
+      )
+    end
+    connection = ActiveRecord::Base.connection
+    columns = connection.columns(:project_percent_done_snapshots).map(&:name)
+    indexes = connection.indexes(:project_percent_done_snapshots).map { |index| [index.name, index.columns, index.unique] }
+    assert_raises(ActiveRecord::IrreversibleMigration) { AddPeriodTypeToProjectPercentDoneSnapshots.new.down }
+    assert_equal columns, connection.columns(:project_percent_done_snapshots).map(&:name)
+    assert_equal indexes, connection.indexes(:project_percent_done_snapshots).map { |index| [index.name, index.columns, index.unique] }
+    assert_equal %w[weekly monthly], snapshots.map { |snapshot| snapshot.reload.period_type }
+  end
   class FakePeriodTypeMigration < AddPeriodTypeToProjectPercentDoneSnapshots
     attr_reader :operations
 
@@ -78,15 +95,13 @@ class ProjectPercentDone::MigrationPeriodTypeTest < ActiveSupport::TestCase
     assert_includes migration.operations, [:add_index, [:project_id, :period_type, :period_end], 'idx_ppd_snapshots_project_period']
   end
 
-  def test_down_is_safe_when_period_type_was_already_removed
+  def test_down_refuses_before_any_schema_operation
     migration = FakePeriodTypeMigration.new(
       :columns => [],
       :indexes => []
     )
 
-    migration.down
-
-    refute_includes migration.operations, [:remove_column, :period_type]
-    assert_includes migration.operations, [:add_index, [:project_id, :period_end], 'idx_ppd_snapshots_project_period']
+    assert_raises(ActiveRecord::IrreversibleMigration) { migration.down }
+    assert_empty migration.operations
   end
 end

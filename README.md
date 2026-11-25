@@ -4,8 +4,8 @@ Redmine Project Percent Done calculates an absolute project completion percentag
 
 The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redmine 5.x.
 
-Current release: **1.3.19**, public contract **1.0**, calculation algorithm
-**1.1**, optional evidence schema **1.0**. Redmine 6.1.2 is the validated local
+Current release: **1.3.20 QA build r2** (2026-11-25), public contract **1.0**, calculation algorithm
+**1.2**, optional evidence schema **1.0**. Redmine 6.1.2 is the validated local
 test target; broader compatibility is an aim rather than fresh certification.
 
 ## Features
@@ -22,6 +22,10 @@ test target; broader compatibility is an aim rather than fresh certification.
 - Supports English and Bulgarian translations.
 - Provides fallback English translations for the Redmine built-in locale set.
 - Provides Public API V1 with optional issue-level evidence for trusted integrations.
+
+English and Bulgarian have complete plugin translations. Other locale files
+provide partial English compatibility text; remaining keys use Redmine's English
+fallback. They are not complete translations into those languages.
 
 Legacy history features remain available when Project Progress History is not
 active. In the documented GCR deployment, the separate Project Progress History
@@ -96,7 +100,9 @@ feature remains disabled by default after upgrade.
 - Subprojects are not included.
 - Calculation is live.
 - Only leaf issues are included by default.
-- Parent issues are excluded when they have child issues in the same project.
+- Every parent issue is excluded, including parents whose children are all in
+  other projects. Only direct-project leaf issues contribute; children from
+  other projects are never imported into the calculation.
 - Closed issues are treated as `100%` by default.
 - Issues without estimates use the average estimate by default.
 
@@ -353,9 +359,10 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 ## Documentation
 
 - [Current project handoff](HANDOFF.md)
+- [QA changes and retest matrix 1.3.20](docs/QA_1.3.20.md)
 - [Calculation behavior](docs/CALCULATION.md)
 - [Public API V1](docs/PUBLIC_API_V1.md)
-- [Current release handoff 1.3.19](docs/HANDOFF_1.3.19.md)
+- [Previous production release handoff 1.3.19](docs/HANDOFF_1.3.19.md)
 - [History coexistence cleanup inventory (2026-10-07)](docs/PROJECT_PERCENT_DONE_CLEANUP_INVENTORY.md)
 - [Production runbook for PPD 1.3.19 / PPH 0.2.2 release](docs/PRODUCTION_RUNBOOK_1.3.19_0.2.2_PPD_EVIDENCE.md)
 - [Historical API integration brief 1.3.4](docs/API_INTEGRATION_BRIEF_1.3.4.md)

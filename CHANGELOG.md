@@ -4,6 +4,35 @@ All notable changes to this project are documented in this file.
 
 The format follows the spirit of Keep a Changelog, and this project uses semantic versioning.
 
+## [1.3.20] - 2026-11-24
+
+QA build r2 (2026-11-25): safely exclude incomplete NULL nested-set coordinates,
+add real Redmine/API/Overview regressions, normalize text to LF, restore the
+1.3.19 changelog entry and verify LF-only package payloads. Plugin/algorithm
+versions remain 1.3.20/1.2; prior QA archives are preserved.
+
+- Fixed floor/ceil decimal-estimate errors using exact weighted arithmetic.
+- Algorithm 1.2 excludes every parent, including cross-project parents; evidence
+  child metadata follows the same global hierarchy. Existing snapshots stay as-is.
+- Replaced quadratic ID membership checks with sets while keeping public arrays.
+- Fixed Norwegian YAML locale root and strengthened locale validation.
+- Replaced external SMTP error text in flash with a safe localized message.
+- Made migration 002 down explicitly irreversible before any DDL or data changes.
+- Clarified partial English locale fallbacks and details-page availability.
+- Separated installation archives from QA/source materials. See docs/QA_1.3.20.md.
+
+## [1.3.19] - 2026-10-11
+
+- Added opt-in `include_evidence: true` to Public API V1 for trusted consumers
+  such as Project Progress History, including grouped metrics, provider metadata
+  and scalar issue evidence with notes. Default aggregate result shape remains
+  backward-compatible; evidence schema 1.0, public contract 1.0 and algorithm 1.1.
+- Added API documentation and regression coverage. Full Redmine 6.1.2 suite:
+  153 runs, 867 assertions, 0 failures, 0 errors, 0 skips.
+- Staging and production validation were approved on 2026-10-11; production
+  bytes were promoted from the approved staging ZIP. See docs/HANDOFF_1.3.19.md
+  for the package hashes and deployment evidence.
+
 ## [1.3.18] - 2026-10-01
 
 ### Added
