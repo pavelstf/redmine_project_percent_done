@@ -92,6 +92,8 @@ def main():
         raise RuntimeError('Missing successful complete Redmine 6.1.2 suite result')
     test_result = dict(zip(('runs', 'assertions', 'failures', 'errors', 'skips'), map(int, matches[-1])))
     source = committed_source(args.ref)
+    # QA reports are repository evidence, not plugin/source package payload.
+    source = {name: data for name, data in source.items() if not name.startswith('QA reports/')}
     if "PLUGIN_VERSION = '1.3.20'" not in source['lib/project_percent_done.rb'].decode('utf-8'):
         raise RuntimeError('Source version mismatch')
     for name, data in source.items():

@@ -104,7 +104,7 @@ bg:
   text_project_percent_done_total_formula: "%{weighted_value} / %{total_weight} x 100 = %{percent}"
   text_project_percent_done_visibility_warning: "Тази таблица показва само задачите, които са видими според правата на текущия потребител. Крайната оценка за % завършеност на проекта, включително тоталите по-долу, се изчислява върху целия проект и всички приложими задачи, независимо от правата за видимост на отделните задачи."
   text_project_percent_done_issue_visibility_summary: "Виждате %{visible_included} от %{total_included} детайла за включени задачи и %{visible_not_included} от %{total_not_included} детайла за невключени задачи."
-  text_project_percent_done_note_leaf_issues: "Parent задачите се изключват по подразбиране, когато имат подзадачи в същия проект, за да няма двойно броене."
+  text_project_percent_done_note_leaf_issues: "Родителските задачи се изключват по подразбиране, когато имат подзадачи, независимо към кой проект принадлежат подзадачите, за да няма двойно броене."
   text_project_percent_done_note_subprojects: "Подпроектите не се включват. Всеки проект се изчислява самостоятелно."
   text_project_percent_done_hidden_included_issues: "%{count} включени задачи не са видими за вашия акаунт. Те участват в общата стойност, но са скрити от тази разбивка."
   text_project_percent_done_hidden_not_included_issues: "%{count} невключени задачи не са видими за вашия акаунт. Те са отчетени, но са скрити от тази разбивка."

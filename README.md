@@ -4,9 +4,18 @@ Redmine Project Percent Done calculates an absolute project completion percentag
 
 The plugin is designed for Redmine 6.1.x and aims to remain compatible with Redmine 5.x.
 
-Current release: **1.3.20 QA build r2** (2026-11-25), public contract **1.0**, calculation algorithm
+Current release: **1.3.20 r3-text — production-approved** (2026-11-25), public contract **1.0**, calculation algorithm
 **1.2**, optional evidence schema **1.0**. Redmine 6.1.2 is the validated local
 test target; broader compatibility is an aim rather than fresh certification.
+
+Staging r2 was accepted and the identical runtime was successfully installed
+and verified on production on 2026-11-25, including PB/PPH provider checks and
+two real-project UI comparisons. A subsequent local text correction clarifies
+that parents are excluded regardless of the children's project; that correction
+is packaged separately as **1.3.20 r3-text** for staging and production and has
+been installed and accepted on both staging and production.
+The accepted r2 ZIPs remain unchanged.
+See [production instructions](docs/PRODUCTION_RUNBOOK_1.3.20_R2.md).
 
 ## Features
 
@@ -359,6 +368,7 @@ RAILS_ENV=test bundle exec rake test TEST=plugins/redmine_project_percent_done/t
 ## Documentation
 
 - [Current project handoff](HANDOFF.md)
+- [Future work backlog](docs/BACKLOG.md)
 - [QA changes and retest matrix 1.3.20](docs/QA_1.3.20.md)
 - [Calculation behavior](docs/CALCULATION.md)
 - [Public API V1](docs/PUBLIC_API_V1.md)

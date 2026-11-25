@@ -7,4 +7,5 @@ docs/PRODUCTION_RUNBOOK_*.md export-ignore
 AGENTS.md export-ignore
 HANDOFF.md export-ignore
 .redmine-test.yml export-ignore
+"QA reports/" export-ignore
 docs/PROJECT_PERCENT_DONE_CONTINUATION_PROMPT.md export-ignore

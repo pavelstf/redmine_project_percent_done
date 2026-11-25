@@ -1,5 +1,134 @@
 # Project Handoff
 
+## Current closeout — production-approved r3-text, 2026-11-25
+
+- User confirmed production installation and UI OK. Full supplied output has
+  TEXT_FIX_OK build=r3-text locales=50, ASSETS_OK verified_copies=2,
+  AFTER_OK settings_preserved=true, PB/PPH provider matches on 8/9/10/19 and
+  final production SUCCESS. Backup suffix: 20261125T103847Z-2862087.
+- UI evidence is from two different projects: PPD 40% / PB 40.0% with zero
+  budget (5 included/0 excluded), and PPD 30% / PB 29.7% (364 included/214
+  excluded). Correct global-parent exclusion explanation is visible.
+- Both environments now run approved 1.3.20 r3-text/algorithm 1.2. Package
+  names/hashes below remain valid. Original r2 and r3-text ZIPs are immutable.
+- Current backlog is docs/BACKLOG.md. New scheduled PPH snapshot provenance
+  remains unverified; existing snapshot access is not a new-capture check.
+- This current section supersedes pending/local-only wording in historical
+  sections below. Repository closeout is authorized: commit and push source,
+  tests, runbooks and QA reports; keep local runtimes/output/ZIPs ignored.
+
+## Latest packages — 1.3.20 r3-text, 2026-11-25
+
+- Locale-only follow-up installed and accepted on staging; production r3-text
+  remains prepared, not deployed. User confirmed staging UI OK on 2026-11-25.
+  Terminal output confirms TEXT_FIX_OK locales=50, ASSETS_OK, AFTER_OK with
+  preserved settings, PB/PPH matches on 8/9/10/19 and final staging SUCCESS.
+  Staging backup suffix: 20261125T103325Z-2836617.
+  Runtime version remains 1.3.20, algorithm 1.2. Exactly 50 locale note files
+  plus QA_MANIFEST.json differ from accepted r2; application logic is identical.
+- Staging handoff: redmine_project_percent_done-1.3.20-staging-handoff-20261125-r3-text.zip,
+  123256 bytes, SHA256 C5477EC256A6DD2A7DC2CF741FE9B58A83286684D97F69D0624977B2871510A8.
+- Production handoff: redmine_project_percent_done-1.3.20-production-handoff-20261125-r3-text.zip,
+  123313 bytes, SHA256 22B6F153A554C393A4DA72D94AD4FC4BAB4E637D48CB903B4C7FEB733486CDB7.
+- Both runtime ZIPs are identical: 170069 bytes,
+  SHA256 0C531E9EAC90267121DA3AC4CC1B5CE0F7BF3CA05A8BE5CE8DFACAD1D48656EA.
+- Self-contained install/rollback scripts are scripts/{staging,production}/
+  ppd-{target}-{install,rollback}-1.3.20-r3-text.sh. Proven FileUtils refresh
+  is used for both environments. Each handoff includes its own instructions,
+  checksums and manifest. Require TEXT_FIX_OK build=r3-text locales=50.
+- Packaged-archive workflows passed 10 checks per target from existing 1.3.19
+  and again 10 per target from existing 1.3.20 (40 total). Rails/DB mocked;
+  real filesystem/backup/asset operations. Full runtime suite remains the
+  immediately preceding 165 runs/1084 assertions/zero failures/errors/skips.
+- Builder scripts/build_textfix_deployment.py preserves original ZIPs and
+  records the uncommitted locale overlay transparently; no new Git tag implied.
+  Validate staging before using the identical production runtime.
+
+## Current state — production installation verified, 2026-11-25
+
+- User supplied complete production p1 output and UI screenshots. Upgrade from
+  PPD 1.3.19/algorithm 1.1 to 1.3.20/algorithm 1.2 completed successfully.
+  BEFORE_OK, ASSETS_OK verified_copies=2, AFTER_OK settings_preserved=true and
+  final SUCCESS are present. Runtime manifest hashes verified; no new matching
+  application-log errors were printed. cPanel Bundler preludes did not prevent
+  successful Rails execution in this supplied run.
+- PB 0.1.8 and PPH 0.7.2 loaded; PB progress enabled. PB/PPH provider checks
+  passed for projects 8/9/10/19 and PPD legacy history guard passed.
+- Real production UI: DI-221 PPD 88% / PB 87.9%, 22 included/1 excluded,
+  weight 1996h; DI-249 PPD 40% / PB 40.0%, 5 included/0 excluded, weight 40h,
+  zero budget. Overview and calculation details agree.
+- Existing PPH snapshot #4893 (capture 2026-11-23) opens with complete evidence;
+  this predates the upgrade and does not validate a new algorithm-1.2 capture.
+  Next scheduled capture remains to be observed; no manual backfill requested.
+- Backup suffix: 20261125T100650Z-2656142. Code, assets and DB backups are under
+  /home/gcrbgcaa/redmine/plugins with the production backup naming in the runbook.
+- A local follow-up corrects the outdated Calculation details parent note in
+  all 50 locale files (EN/BG plus English compatibility text). Parents are
+  excluded regardless of the children's project. Calculation behavior, version
+  and existing accepted ZIPs are unchanged. This text fix is not deployed or
+  included in the previously delivered production ZIP.
+- Follow-up test isolation: the NULL-coordinate overview regression now sets
+  issue_done_ratio=issue_field before creating its fixtures, so a default
+  status-derived ratio cannot overwrite the intended 70% fixture on creation.
+  Hooks tests also rebuild Redmine's global hook-instance cache: diagnostics
+  found a correct 70.0 calculation but a cached listener list missing PPD in
+  full-suite runs. Final Redmine 6.1.2 suite: 165 runs/1084 assertions,
+  0 failures/0 errors/0 skips; focused controller 17/148 and hooks 6/24 passed.
+
+## Historical production preparation — 2026-11-25
+
+- User confirmed staging OK and that PPD 84% / PB 83.7% are the same project.
+  Finish output confirmed assets hashes, PPD 1.3.20/algorithm 1.2, PB 0.1.8,
+  PPH 0.7.2 and provider matches. Earlier pending-staging statements below are
+  historical and superseded by this acceptance.
+- Production operator p1: release_packages/redmine_project_percent_done-1.3.20-production-handoff-20261125-r2-p1.zip,
+  128792 bytes, SHA-256 797C8F8A6AEA69A008AC41F02711B8630A0E92417768A71E1B044E4A0DEB3387.
+  Includes runtime ZIP, self-contained install/rollback, README, checksums, manifest.
+- Runtime is byte-identical to accepted staging r2: 169409 bytes,
+  SHA-256 FA3B218167DAEC4996486BB22D6D0F1D0B5FFC3CC0952DCFD2C1F1B923B60F67.
+  Source remains qa-v1.3.20-r2 at f763c17. No new runtime changes or version bump.
+- Production root /home/gcrbgcaa/redmine; Ruby venv
+  /home/gcrbgcaa/rubyvenv/redmine612build/3.2. Manual user deployment only.
+  See docs/PRODUCTION_RUNBOOK_1.3.20_R2.md and scripts/production/.
+- Ten complete operator checks passed from the packaged ZIP in isolated Linux
+  fixtures, including install/rollback and failures; Rails/DB mocked. Bash/Ruby
+  syntax and LF/helper/hash checks passed. Runtime suite evidence remains
+  165 runs/1084 assertions/0 failures/0 errors/0 skips for the same runtime bytes.
+- Production execution, live MySQL backup and HTTP/UI acceptance remain pending.
+  No remote actions, commits or pushes were performed for this preparation.
+
+## Historical staging handoff — 2026-11-25
+
+- User executed op3: PPD 1.3.20/algorithm 1.2 and AFTER_OK were confirmed,
+  with preserved settings and provider reads, but /dev/fd asset refresh failed.
+  One-line companion lookup also misreported registration. Full staging/UI
+  acceptance is pending; do not infer it from the final SUCCESS alone.
+- Finish assets without reinstalling or replacing the original backup marker:
+  scripts/staging/ppd-staging-finish-1.3.20-r2.sh. It uses no process substitution
+  and prints corrected registry/PB settings. Follow docs/STAGING_SMOKE_1.3.20_R2.md.
+
+- Current operator revision is op3, in the `...-staging-handoff-20261125-r2-op3.zip`
+  archive. Install/rollback embed their Ruby checks under /tmp and do not look
+  up helper files after changing cwd. Nine sandbox workflow checks passed;
+  see TESTING_LOG.md for exact scope. Original r2 runtime bytes are unchanged.
+  Scripts support preflight-only; real GCR execution is still pending.
+
+- The r2 QA report closes R-01..R-03 and reports no new functional defects.
+- Informative N-01 is deferred as PPD-N-01 in docs/BACKLOG.md by owner request.
+  No invalid_hierarchy implementation is included in the staging runtime.
+- Staging package is a byte-for-byte promotion of the accepted r2 install ZIP:
+  redmine_project_percent_done-1.3.20-staging-20261125-r2.zip, 169409 bytes,
+  SHA-256 FA3B218167DAEC4996486BB22D6D0F1D0B5FFC3CC0952DCFD2C1F1B923B60F67.
+- Deployment instructions: docs/STAGING_RUNBOOK_1.3.20_R2.md; install/rollback
+  scripts and Rails verifier are under scripts/staging/. An operator handoff ZIP
+  in release_packages/ includes the runtime ZIP and all required operator files.
+- Scripts are for manual execution on GCR staging only. No deployment, DB backup
+  or remote command was executed by the agent. MySQL/host behavior is pending.
+- Runtime remains QA tag qa-v1.3.20-r2 at f763c17; only local backlog/docs/operator
+  files changed after the tag. Do not rebuild accepted runtime for these docs.
+- Local promotion and script syntax/checksum checks are in TESTING_LOG.md;
+  generated artifact evidence is output/staging-1.3.20-r2/verification.json.
+
 ## Current continuation state — 2026-11-25 / QA 1.3.20 r2
 
 This section supersedes the historical continuation records below.
@@ -369,6 +498,5 @@ are independent of the local checkout and should not be modified for this move.
 - Preserve archives deliberately; compare to recorded hashes when copying ZIPs.
 - Confirm any PPH checkout independently before undertaking history UI work.
 
-The project is ready for a filesystem copy with the external-link/runtime
-qualifications above. This document remains uncommitted by explicit request.
-Wait for user confirmation before further work.
+The filesystem relocation notes above are historical. Current deployment and
+repository closeout status is recorded at the top of this document.

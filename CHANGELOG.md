@@ -6,6 +6,12 @@ The format follows the spirit of Keep a Changelog, and this project uses semanti
 
 ## [1.3.20] - 2026-11-24
 
+r3-text (2026-11-25), approved on staging and production: corrected the parent
+exclusion explanation in all 50 locale files; parents are excluded regardless
+of the children's project. Calculation/version/algorithm unchanged. Added
+self-contained, verified deployment/rollback scripts and production evidence.
+Full tests: 165 runs/1084 assertions, zero failures/errors/skips.
+
 QA build r2 (2026-11-25): safely exclude incomplete NULL nested-set coordinates,
 add real Redmine/API/Overview regressions, normalize text to LF, restore the
 1.3.19 changelog entry and verify LF-only package payloads. Plugin/algorithm

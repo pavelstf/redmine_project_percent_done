@@ -1,5 +1,187 @@
 # Testing Log
 
+## 2026-11-25 - r3-text production accepted and repository closeout
+
+- User confirms successful production installation and UI OK. Supplied output:
+  TEXT_FIX_OK build=r3-text locales=50, ASSETS_OK verified_copies=2,
+  AFTER_OK version=1.3.20 algorithm=1.2 settings_preserved=true and final SUCCESS.
+  PB/PPH provider checks passed on 8/9/10/19. Production backup suffix
+  20261125T103847Z-2862087; original DB/code/assets backups retained on server.
+- Screenshots: corrected global-parent note; project one 40% / PB 40.0%,
+  5 included/0 excluded, zero budget; project two 30% / PB 29.7%,
+  364 included/214 excluded. Owner explicitly states two different projects.
+- Both staging and production r3-text are accepted. No app/test changes during
+  closeout; full suite evidence remains 165 runs/1084 assertions/0 failures/
+  0 errors/0 skips and 40 packaged operator checks. No remote deployment by agent.
+- Consolidated deferred work in docs/BACKLOG.md; preserved accepted packages
+  and ignored local build/test output rather than deleting release evidence.
+
+## 2026-11-25 - r3-text staging accepted
+
+- User supplied complete staging installation output and confirmed UI OK.
+  BEFORE_OK 1.3.20/1.2, TEXT_FIX_OK build=r3-text locales=50, ASSETS_OK,
+  AFTER_OK settings_preserved=true and final staging SUCCESS confirmed.
+  PB 0.1.8/PPH 0.7.2 provider checks passed for projects 8/9/10/19;
+  baseline raw/display unchanged and legacy history guard passed.
+- Backups use suffix 20261125T103325Z-2836617. Production r3-text has not yet
+  been confirmed installed. Existing production r2 remains previously verified.
+
+## 2026-11-25 - r3-text deployment packages
+
+- Built staging/production handoffs using scripts/build_textfix_deployment.py.
+  Compared to immutable r2: exactly 50 locale-note replacements and manifest;
+  verified workspace app/lib/db/assets/config/init match the runtime payload.
+  Both environments contain identical runtime bytes, SHA256
+  0C531E9EAC90267121DA3AC4CC1B5CE0F7BF3CA05A8BE5CE8DFACAD1D48656EA, 170069 bytes.
+- Reused the immediately preceding full Redmine test result for these same
+  runtime files: 165 runs/1084 assertions/0 failures/0 errors/0 skips.
+- Final archived install/rollback workflows: staging 10/10 and production
+  10/10 from existing 1.3.19, repeated staging 10/10 and production 10/10 from
+  existing 1.3.20 (40 checks). Includes correct-root refusal, checksum/activation/
+  DB/migration/assets/after-check failures and code/assets rollback. Rails/DB
+  commands mocked; real Linux files/tar/gzip/Ruby FileUtils; no remote execution.
+- All four generated scripts passed Bash syntax; ZIP integrity/runtime identity
+  and checksum metadata verified. Package sizes/hashes in HANDOFF and
+  output/textfix-r3/packages.json. Existing accepted archives remain unchanged.
+- Script build verification marker: TEXT_FIX_OK build=r3-text locales=50.
+  New build awaits staging then production validation; no deployment by agent.
+
+## 2026-11-25 - Production evidence and Calculation details text follow-up
+
+- User production output confirms upgrade 1.3.19/1.1 -> 1.3.20/1.2,
+  BEFORE_OK, ASSETS_OK verified_copies=2, AFTER_OK settings_preserved=true,
+  full runtime manifest verification and final SUCCESS. Backups have suffix
+  20261125T100650Z-2656142. No new matching application errors printed.
+- PB 0.1.8 and PPH 0.7.2 providers passed on projects 8/9/10/19; legacy PPD
+  collector guard passed. Two real-project UI checks: DI-221 88% vs PB 87.9%,
+  22 included/1 excluded/1996h; DI-249 40% vs PB 40.0%, 5/0/40h and zero budget.
+  Existing snapshot #4893 opens with complete evidence; next new capture pending.
+- Updated parent-exclusion note in all 50 locale files: children's project does
+  not affect parent exclusion. EN/BG and compatibility English stay consistent.
+  All 50 YAML files parsed successfully; note content and LF endings verified.
+- Focused controller suite: seed 19018, 17 runs, 148 assertions, 0 failures,
+  0 errors, 0 skips. Default database migrations enabled.
+- Initial full run: 165 runs, 1084 assertions, 1 failure, 0 errors, 0 skips.
+  NULL-coordinate overview test created its 70% fixture before setting
+  issue_done_ratio=issue_field, allowing status-derived defaults to overwrite it.
+  Moved existing setting scope before fixture creation; no application change.
+- Focused hooks suite after fix: seed 41875, 6 runs, 24 assertions, 0 failures,
+  0 errors, 0 skips. Default database migrations enabled.
+- Full repeat seed 36713 and diagnostic repeat each still had 165 runs,
+  1084 assertions, 1 failure, 0 errors, 0 skips. Diagnostics established that
+  calculation was 70.0 and display enabled, but Redmine's cached hook list
+  omitted PPD. Fixture setup alone was not the complete cause/fix.
+- Hooks test setup now rebuilds the global listener-instance cache using
+  Redmine::Hook.clear_listeners_instances; retained failure diagnostics report
+  display state, actual calculator value and registered listeners.
+- FINAL full suite: seed 10852, 165 runs, 1084 assertions, 0 failures,
+  0 errors, 0 skips (26.899554s). Skipped redundant database preparation only
+  for this final run; migrations had completed in preceding runs on this same
+  database, with no schema changes. Log: text-fix-full-verified.log.
+- Logs: output/production-1.3.20-r2/text-fix-focused.log, text-fix-full.log,
+  text-fix-hooks.log and text-fix-full-final.log. Shared Redmine 6.1.2 runtime.
+- Text correction is local only; accepted deployment ZIPs are immutable and
+  have not been regenerated. No deployment, commit or push for this follow-up.
+
+## 2026-11-25 - Staging acceptance and production operator p1
+
+- Owner accepted staging after successful FileUtils asset finish; screenshots
+  confirmed PPD 84% and PB 83.7% on the same real project. Zero-budget progress
+  was also visible. Previous pending-staging entries are historical.
+- Production runtime promoted byte-for-byte from accepted staging ZIP:
+  169409 bytes, SHA-256 FA3B218167DAEC4996486BB22D6D0F1D0B5FFC3CC0952DCFD2C1F1B923B60F67.
+  No application changes; existing full-suite result remains 165 runs,
+  1084 assertions, 0 failures, 0 errors, 0 skips. Suite not rerun for operator docs.
+- Production handoff ZIP p1: 128792 bytes,
+  SHA-256 797C8F8A6AEA69A008AC41F02711B8630A0E92417768A71E1B044E4A0DEB3387.
+- Ran scripts/staging/test_operator_workflow.py --target production --archive
+  against the final production handoff ZIP using WSL Ubuntu-22.04.
+  All 10 workflow checks passed: cwd-changing activation/relative preflight;
+  relative and absolute install plus full rollback; checksum failure;
+  baseline/DB failure; migration failure plus rollback; after-check failure plus
+  rollback; activation failure; asset failure plus rollback; wrong physical root.
+- Fixtures mock Rails/DB, and use actual Linux filesystem, tar/gzip and Ruby
+  FileUtils assets logic; no remote command or live DB validation was performed.
+- Both production scripts passed Bash -n; canonical embedded helper passed
+  Ruby -c. Builder verified LF endings, exact embedded helpers, canonical
+  production paths, absence of /dev/fd/process substitution/cwd-based helper,
+  runtime identity and archive content hashes. git diff --check passed.
+- Artifact evidence: output/production-1.3.20-r2/package_evidence.json.
+  Live production terminal output and HTTP/UI acceptance remain pending.
+
+## 2026-11-25 - Received op3 staging execution evidence
+
+- User log confirms before 1.3.19/algorithm 1.1 and after 1.3.20/1.2 on Redmine
+  6.1.2, Ruby 3.2.11, Rails 7.2.3. Backups were created. AFTER_OK confirms runtime
+  manifest hashes, PPD settings preservation and API/evidence checks passed.
+- PB/PPH provider reads matched on projects 8/9/10/19 (only 8 had available 0%;
+  no positive-progress sample). These checks are not UI integration acceptance.
+- Two operator issues found: process substitution under restricted /dev/fd
+  during fingerprint CSS refresh, and a one-line rescue expression that printed
+  companions as missing even when found. The later SUCCESS does not erase the
+  asset error. Runtime PPD calculation code is not changed by these issues.
+- Local scripts now avoid process substitution and use a multiline registry
+  lookup. Standalone finish script refreshes/hash-checks assets through FileUtils,
+  preserves original code rollback pointer and checks actual registry/API state.
+- Four asset-copy regressions passed (standard/compiled/fingerprinted, no compiled
+  tree, unsafe symlink refusal, missing source refusal), plus found/missing
+  registry output verified using a stub registry. Finish Bash/Ruby syntax passed.
+- Manual acceptance checklist: docs/STAGING_SMOKE_1.3.20_R2.md. No agent remote
+  operation or staging acceptance claim; user finish/UI checks remain pending.
+
+## 2026-11-25 - Staging operator revision op3
+
+- Re-read gcr-redmine-environments and the full gcr-redmine-plugin-runbooks
+  discovery/templates/troubleshooting references before revising the scripts.
+- Exact op2 line 29 was `test -f "$CHECK"`. SCRIPT_DIR was resolved from a
+  relative BASH_SOURCE after cd to Redmine root, so the helper was looked up
+  outside plugins/. The complete sandbox reproduced the same line-29 failure
+  while the helper was present in plugins/. Earlier activation-only tests did
+  not exercise that filesystem transition.
+- Install/rollback are now self-contained and write identical quoted Ruby
+  verifiers into their private /tmp work directories. They have no SCRIPT_DIR
+  dependency. Runtime ZIP and QA tag remain unchanged.
+- Nine Linux/WSL sandbox workflow checks passed: exact legacy reproduction;
+  preflight with activation changing cwd; complete relative/plugins and absolute/
+  home install plus code/asset rollback; checksum refusal; baseline/DB failure
+  refusal; migration/after-check failures followed by rollback; activation failure.
+  Native filesystem/tar/gzip were exercised, unzip used Python's ZIP extraction,
+  and host identity/Ruby/Rails/DB commands were mocked. No remote operation.
+- Bash parsing and embedded Ruby syntax checked separately. Operator checksums,
+  LF payload, manifest and unchanged runtime checksum are verified at packaging.
+- This is operator-flow coverage, not proof of real GCR MySQL or Rails execution.
+
+## 2026-11-25 - Staging operator revision op2
+
+- Server read-only diagnostics confirmed canonical root/user, every uploaded
+  file, runtime SHA/size, dump tools and Bundler dependencies. Venv activation
+  returned 0 when sourced in an if condition, despite RubyGems warnings.
+- Scoped conditional venv activation now requires the final activation status;
+  all subsequent checks keep errexit/pipefail. Both install/rollback scripts
+  report phase, line and exit code from an early ERR trap. Install progress and
+  a preflight-only mode were added; runtime bytes are unchanged.
+- Six local Bash-prefix regression checks passed: reproduce the old failure
+  on an intermediate activation probe, successful conditional activation for
+  install/rollback, fail-fast diagnostics for subsequent errors in each, and
+  refusal of an actual activation failure. No DB/deployment code was executed.
+- Bash syntax checks passed. The op2 operator archive has fresh checksums;
+  original operator and accepted plugin ZIPs remain unchanged. Remote root
+  cause is an inference from the diagnostic/errexit difference, not a claim to
+  have inspected the server's activation file.
+
+## 2026-11-25 - Staging package/runbook handoff
+
+- Runtime promoted byte-for-byte from accepted r2 install ZIP: 169409 bytes,
+  SHA-256 FA3B218167DAEC4996486BB22D6D0F1D0B5FFC3CC0952DCFD2C1F1B923B60F67.
+- Runtime manifest and every runtime file hash verified. No application code
+  changed; existing 165 runs / 1084 assertions / 0 failures/errors/skips remains
+  the runtime test evidence. Full suite was not repeated for operator docs.
+- Install/rollback scripts passed Bash syntax checks; Rails verification helper
+  passed Ruby syntax checking. These checks do not certify execution on GCR.
+- Operator archive has per-member hashes, LF text, a SHA256SUMS file and the
+  staging runtime ZIP. No remote deployment or DB operation was executed locally.
+- N-01 recorded as deferred PPD-N-01 in docs/BACKLOG.md; no runtime change.
+
 ## 2026-11-25 - 1.3.20 QA build r2 (R-01..R-03)
 
 - Fixed nil lft/rgt leaf evaluation without repairing source hierarchy. Added
