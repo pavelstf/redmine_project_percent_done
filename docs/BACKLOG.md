@@ -1,6 +1,6 @@
 # Project Percent Done backlog
 
-Current as of 2026-11-25 after staging and production approval of 1.3.20 r3-text.
+Current as of 2026-11-26 after staging and production approval of 1.3.20 r3-text.
 QA defects PPD-01..08, R-01..03 and the obsolete parent note are closed.
 
 ## PPD-N-01 — distinguish invalid hierarchy from excluded parents
@@ -27,11 +27,16 @@ QA defects PPD-01..08, R-01..03 and the obsolete parent note are closed.
 
 ## PPD-OPS-01 — verify the next scheduled PPH capture
 
-- Status: pending observation, not an identified PPD defect. Priority: medium.
-- Check the next naturally scheduled snapshot records PPD 1.3.20/algorithm 1.2,
-  complete evidence and the intended Europe/Sofia target period. Existing
-  snapshot #4893 predates the upgrade. Do not rewrite history or backfill merely
-  to close this check. Scheduling and history belong to the PPH project.
+- Status: CLOSED, 2026-11-26; production read-only verification passed.
+- Natural cron run 129 started 2026-11-26 00:20:11 Europe/Sofia
+  (= 2026-11-25 22:20:11 UTC), successful, zero errors, created 55 daily snapshots.
+- Snapshots 5025..5079 all passed: source PPD 1.3.20, algorithm 1.2,
+  complete verified shared evidence, period 2026-11-26..2026-11-26,
+  recorded Europe/Sofia and captures within the run. Summary: 55/55 passed.
+- This verifies fresh native capture, not an existing-only/manual execution.
+  No collection, repair, backfill or history writes were performed by the check.
+- Evidence: docs/PPH_CRON_ACCEPTANCE_20261126.md. Scope is production daily
+  capture; it does not certify a later weekly/monthly promotion or staging cron.
 
 ## PPD-CSV-01 — optional extension of formula-prefix neutralization
 

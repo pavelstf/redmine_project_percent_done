@@ -2,6 +2,12 @@
 
 ## Current status: r3-text approved on staging and production, 2026-11-25
 
+Follow-up 2026-11-26: PPD-OPS-01 closed. Natural production cron run 129
+created 55 daily snapshots, all source PPD 1.3.20/algorithm 1.2, complete
+evidence, correct 2026-11-26 period and recorded Europe/Sofia. See
+[capture acceptance](PPH_CRON_ACCEPTANCE_20261126.md). Historical pending-capture
+statements below are superseded for this production daily check only.
+
 The subsequent locale-only r3-text build was installed successfully on both
 environments. User confirmed production UI OK and supplied TEXT_FIX_OK locales=50,
 ASSETS_OK verified_copies=2, AFTER_OK settings_preserved=true, PB/PPH matches and

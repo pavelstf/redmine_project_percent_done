@@ -17,6 +17,10 @@ been installed and accepted on both staging and production.
 The accepted r2 ZIPs remain unchanged.
 See [production instructions](docs/PRODUCTION_RUNBOOK_1.3.20_R2.md).
 
+The natural production PPH cron run on 2026-11-26 created 55 daily snapshots,
+all verified with algorithm 1.2, complete evidence and the correct Europe/Sofia
+period. PPD-OPS-01 is closed; see [capture acceptance](docs/PPH_CRON_ACCEPTANCE_20261126.md).
+
 ## Features
 
 - Calculates project `% done` from issues in the current project.

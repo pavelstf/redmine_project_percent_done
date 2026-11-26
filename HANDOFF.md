@@ -11,8 +11,11 @@
   excluded). Correct global-parent exclusion explanation is visible.
 - Both environments now run approved 1.3.20 r3-text/algorithm 1.2. Package
   names/hashes below remain valid. Original r2 and r3-text ZIPs are immutable.
-- Current backlog is docs/BACKLOG.md. New scheduled PPH snapshot provenance
-  remains unverified; existing snapshot access is not a new-capture check.
+- Current backlog is docs/BACKLOG.md. PPD-OPS-01 closed on 2026-11-26:
+  natural production cron run 129 created 55 daily snapshots (5025..5079),
+  all algorithm 1.2/source PPD 1.3.20/complete evidence, correct Sofia period.
+  See docs/PPH_CRON_ACCEPTANCE_20261126.md. Older pending-capture notes below
+  are historical; weekly/monthly promotions are outside this acceptance scope.
 - This current section supersedes pending/local-only wording in historical
   sections below. Repository closeout is authorized: commit and push source,
   tests, runbooks and QA reports; keep local runtimes/output/ZIPs ignored.

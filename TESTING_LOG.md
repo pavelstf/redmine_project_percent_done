@@ -1,5 +1,24 @@
 # Testing Log
 
+## 2026-11-26 - PPD-OPS-01 closed: natural production PPH capture
+
+- Reviewed complete user-supplied read-only production checker output.
+  PPD 1.3.20 / PPH 0.7.2; latest automatic daily run 129 successful with
+  created=55 and error_count=0. All 55 snapshot rows independently counted
+  and checked against algorithm/source/evidence/result/period expectations.
+- Start: 2026-11-25 22:20:11 UTC = 2026-11-26 00:20:11 Europe/Sofia.
+  Recorded run/snapshot zone Europe/Sofia; Rails UTC intentionally differs.
+  Period 2026-11-26..2026-11-26; snapshot IDs 5025..5079, evidence sets 1684..1738.
+- Every snapshot: algorithm 1.2, source PPD 1.3.20, complete verified evidence,
+  capture within the run, result OK. SUMMARY fresh_daily_snapshots=55 passed=55
+  and final SUCCESS confirm native new capture after deployment.
+- PPD-OPS-01 CLOSED; acceptance record docs/PPH_CRON_ACCEPTANCE_20261126.md.
+  History unchanged by checker; no agent remote actions. Weekly/monthly and
+  staging cron are outside this production daily verification.
+- Documentation-only update; no application/test/package changes or new suite
+  execution. Existing full suite evidence remains 165/1084 with zero failures,
+  errors or skips. Documentation whitespace checked with git diff --check.
+
 ## 2026-11-25 - r3-text production accepted and repository closeout
 
 - User confirms successful production installation and UI OK. Supplied output:
